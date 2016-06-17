@@ -148,10 +148,6 @@ namespace Roppyakken
         /// <param name="yamafuda"></param>
         public void TakeToYamafuda(Yamafuda yamafuda)
         {
-            // require
-            if (yamafuda.CardStack == null) throw new ArgumentNullException();
-            if (yamafuda.CardStack.Count == 0) throw new Exception("CardStackが空です。");
-
             Card card = yamafuda.CardPop();
             AddCard(card);
         }
@@ -164,8 +160,6 @@ namespace Roppyakken
         {
             // requie
             if (count <= 0) throw new ArgumentOutOfRangeException();
-            if (yamafuda.CardStack == null) throw new ArgumentNullException();
-            if (yamafuda.CardStack.Count == 0) throw new Exception("CardStackが空です。");
 
             while (count-- != 0)
                 TakeToYamafuda(yamafuda);
@@ -177,9 +171,6 @@ namespace Roppyakken
         /// <param name="bafuda"></param>
         public void PutToBafuda(Card haguriCard, Bafuda bafuda)
         {
-            // requre
-            if (bafuda.Cards == null) throw new ArgumentNullException();
-
             bafuda.AddCard(haguriCard);
         }
         /// <summary>

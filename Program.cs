@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Roppyakken
+namespace RoppyakkenApplication
 {
     [Flags]
     enum Pattern : long
@@ -83,12 +83,12 @@ namespace Roppyakken
         /// <summary>
         /// Handメンバーはコンソールに手札を表示するための要素である。
         /// </summary>
-        private Pattern hand;
+        protected Pattern hand;
         public Pattern Hand { get { return hand; } }
         /// <summary>
         /// CardsメンバーはPlayerクラスによる手札の実装である。
         /// </summary>
-        private List<Card> cards = new List<Card>();
+        protected List<Card> cards = new List<Card>();
         public List<Card> Cards { get { return cards; } }
         public void AddCard(Card card)
         {
@@ -175,6 +175,8 @@ namespace Roppyakken
         /// 現在の得点。
         /// </summary>
         public int Score { get; set; }
+        public State PlayerState { get; set; }
+        public Handle PlayerHandle { get; set; }
         /// <summary>
         /// haguriCardのManth属性が、BafudaクラスのCardsのManth属性と一致しない場合、haguriCardをBafudaのCardsに追加する。
         /// </summary>
@@ -224,6 +226,69 @@ namespace Roppyakken
             AddKirifuda(haguriCard);
             AddKirifuda(getCard);
         }
+        /// <summary>
+        /// 選択肢は、異常な入力に対してExceptionを発生させる事で閉じている必要がある。
+        /// </summary>
+        /// <param name="bafuda"></param>
+        /// <param name="card"></param>
+        public void Throw(Bafuda bafuda, Card card)
+        {
+            if (PlayerHandle == Handle.Auto)
+            {
+                if (bafuda.isMatchManth(cards[0]))
+                {
+                    int matchCount = bafuda.MatchManthCount(card);
+                    if (1 > matchCount)
+                    {
+
+                    }
+                    else if(1 == matchCount)
+                    {
+                        // 例外処理はbafudaクラス内に閉じ込める。
+                        bafuda.AddCard(cards[0]);
+                        RemoveCard(cards[0]);
+
+                        // 場札に一致する札が存在するため一致する札を一枚kirifudaに加える。
+                        bafuda.ThrowToMatch(this, cards[0]);
+                    }
+                    else
+                    {
+                        throw new ArgumentOutOfRangeException();
+                    }
+                }
+                else
+                {
+                    // 例外処理はbafudaクラス内に閉じ込める。
+                    bafuda.AddCard(cards[0]);
+                    RemoveCard(cards[0]);
+                }
+            }
+            else if (PlayerHandle == Handle.Manual)
+            {
+                while (true)
+                {
+                    ConsoleKey consoleKey = Console.ReadKey(true).Key;
+                    switch (consoleKey)
+                    {
+                        case ConsoleKey.D0:
+                            Console.Write("{0} を切りますか？\n", cards[0].CardPattern);
+                            consoleKey = Console.ReadKey(true).Key;
+                            if (consoleKey == ConsoleKey.Enter)
+                            {
+                                Console.Write("{0} を切りました。\n", cards[0].CardPattern);
+                                
+                                break;
+                            }
+                            else if (consoleKey == ConsoleKey.N)
+                            {
+                                break;
+                            }
+                            else
+                                throw new Exception("異常な入力が読み込まれました。\n");
+                    }
+                }
+            }
+        }
     }
     class Card
     {
@@ -242,54 +307,54 @@ namespace Roppyakken
         public Yamafuda()
         {
             List<Card> cards = new List<Card>();
-            cards.Add(new Card(Pattern.Matsu1,1));
-            cards.Add(new Card(Pattern.Matsu2,1));
-            cards.Add(new Card(Pattern.MatsuAndTanzakuAka,1));
-            cards.Add(new Card(Pattern.MatsuAndTsuru,1));
-            cards.Add(new Card(Pattern.Ume1,2));
-            cards.Add(new Card(Pattern.Ume2,2));
-            cards.Add(new Card(Pattern.UmeAndTanzakuAka,2));
-            cards.Add(new Card(Pattern.UmeAndUguisu,2));
-            cards.Add(new Card(Pattern.Sakura1,3));
-            cards.Add(new Card(Pattern.Sakura2,3));
-            cards.Add(new Card(Pattern.SakuraAndMaku,3));
-            cards.Add(new Card(Pattern.SakuraAndTanzakuAka,3));
-            cards.Add(new Card(Pattern.Fuji1,4));
-            cards.Add(new Card(Pattern.Fuji2,4));
-            cards.Add(new Card(Pattern.FujiAndHototogisu,4));
-            cards.Add(new Card(Pattern.FujiAndTanzakuAka,4));
-            cards.Add(new Card(Pattern.Ayame1,5));
-            cards.Add(new Card(Pattern.Ayame2,5));
-            cards.Add(new Card(Pattern.AyameAndHashi,5));
-            cards.Add(new Card(Pattern.AyameAndTanzakuAka,5));
-            cards.Add(new Card(Pattern.Botan1,6));
-            cards.Add(new Card(Pattern.Botan2,6));
-            cards.Add(new Card(Pattern.BotanAndChou,6));
-            cards.Add(new Card(Pattern.BotanAndTanzakuAo,6));
-            cards.Add(new Card(Pattern.Hagi1,7));
-            cards.Add(new Card(Pattern.Hagi2,7));
-            cards.Add(new Card(Pattern.HagiAndInoshishi,7));
-            cards.Add(new Card(Pattern.HagiAndTanzakuAka,7));
-            cards.Add(new Card(Pattern.Sakura1,8));
-            cards.Add(new Card(Pattern.Sakura2,8));
-            cards.Add(new Card(Pattern.SakuraAndMaku,8));
-            cards.Add(new Card(Pattern.SakuraAndTanzakuAka,8));
-            cards.Add(new Card(Pattern.Kiku1,9));
-            cards.Add(new Card(Pattern.Kiku2,9));
-            cards.Add(new Card(Pattern.KikuAndOchoko,9));
-            cards.Add(new Card(Pattern.KikuAndTanzakuAo,9));
-            cards.Add(new Card(Pattern.Momiji1,10));
-            cards.Add(new Card(Pattern.Momiji2,10));
-            cards.Add(new Card(Pattern.MomijiAndShika,10));
-            cards.Add(new Card(Pattern.MomijiAndTanzakuAo,10));
-            cards.Add(new Card(Pattern.Yanagi,11));
-            cards.Add(new Card(Pattern.YanagiAndKaeru,11));
-            cards.Add(new Card(Pattern.YanagiAndTanzakuAka,11));
-            cards.Add(new Card(Pattern.YanagiAndTsubame,11));
-            cards.Add(new Card(Pattern.Kiri1,12));
-            cards.Add(new Card(Pattern.Kiri2,12));
-            cards.Add(new Card(Pattern.KiriAndHouou,12));
-            cards.Add(new Card(Pattern.KiriAndYellow,12));
+            cards.Add(new Card(Pattern.Matsu1, 1));
+            cards.Add(new Card(Pattern.Matsu2, 1));
+            cards.Add(new Card(Pattern.MatsuAndTanzakuAka, 1));
+            cards.Add(new Card(Pattern.MatsuAndTsuru, 1));
+            cards.Add(new Card(Pattern.Ume1, 2));
+            cards.Add(new Card(Pattern.Ume2, 2));
+            cards.Add(new Card(Pattern.UmeAndTanzakuAka, 2));
+            cards.Add(new Card(Pattern.UmeAndUguisu, 2));
+            cards.Add(new Card(Pattern.Sakura1, 3));
+            cards.Add(new Card(Pattern.Sakura2, 3));
+            cards.Add(new Card(Pattern.SakuraAndMaku, 3));
+            cards.Add(new Card(Pattern.SakuraAndTanzakuAka, 3));
+            cards.Add(new Card(Pattern.Fuji1, 4));
+            cards.Add(new Card(Pattern.Fuji2, 4));
+            cards.Add(new Card(Pattern.FujiAndHototogisu, 4));
+            cards.Add(new Card(Pattern.FujiAndTanzakuAka, 4));
+            cards.Add(new Card(Pattern.Ayame1, 5));
+            cards.Add(new Card(Pattern.Ayame2, 5));
+            cards.Add(new Card(Pattern.AyameAndHashi, 5));
+            cards.Add(new Card(Pattern.AyameAndTanzakuAka, 5));
+            cards.Add(new Card(Pattern.Botan1, 6));
+            cards.Add(new Card(Pattern.Botan2, 6));
+            cards.Add(new Card(Pattern.BotanAndChou, 6));
+            cards.Add(new Card(Pattern.BotanAndTanzakuAo, 6));
+            cards.Add(new Card(Pattern.Hagi1, 7));
+            cards.Add(new Card(Pattern.Hagi2, 7));
+            cards.Add(new Card(Pattern.HagiAndInoshishi, 7));
+            cards.Add(new Card(Pattern.HagiAndTanzakuAka, 7));
+            cards.Add(new Card(Pattern.Sakura1, 8));
+            cards.Add(new Card(Pattern.Sakura2, 8));
+            cards.Add(new Card(Pattern.SakuraAndMaku, 8));
+            cards.Add(new Card(Pattern.SakuraAndTanzakuAka, 8));
+            cards.Add(new Card(Pattern.Kiku1, 9));
+            cards.Add(new Card(Pattern.Kiku2, 9));
+            cards.Add(new Card(Pattern.KikuAndOchoko, 9));
+            cards.Add(new Card(Pattern.KikuAndTanzakuAo, 9));
+            cards.Add(new Card(Pattern.Momiji1, 10));
+            cards.Add(new Card(Pattern.Momiji2, 10));
+            cards.Add(new Card(Pattern.MomijiAndShika, 10));
+            cards.Add(new Card(Pattern.MomijiAndTanzakuAo, 10));
+            cards.Add(new Card(Pattern.Yanagi, 11));
+            cards.Add(new Card(Pattern.YanagiAndKaeru, 11));
+            cards.Add(new Card(Pattern.YanagiAndTanzakuAka, 11));
+            cards.Add(new Card(Pattern.YanagiAndTsubame, 11));
+            cards.Add(new Card(Pattern.Kiri1, 12));
+            cards.Add(new Card(Pattern.Kiri2, 12));
+            cards.Add(new Card(Pattern.KiriAndHouou, 12));
+            cards.Add(new Card(Pattern.KiriAndYellow, 12));
             cards = cards.OrderBy(i => Guid.NewGuid()).ToList();
             foreach (Card card in cards)
             {
@@ -315,7 +380,20 @@ namespace Roppyakken
         /// <summary>
         /// BafudaクラスのCardsのManth属性に対する一致を問い合わせる操作。
         /// </summary>
-        /// <param name="matchingCard">BaufdaクラスのCardsに対し、問い合わせを行う対象。</param>
+        /// <param name="card">BaufdaクラスのCardsに対し、問い合わせを行う対象。</param>
+        /// <returns></returns>
+        public bool isMatchManth(Card card)
+        {
+            // require
+            if (cards == null) throw new ArgumentNullException();
+            if (cards.Count <= 0) throw new Exception("cards.Count <= 0です。");
+
+            return cards.Any(bafudaCard => bafudaCard.Manth == card.Manth);
+        }
+        /// <summary>
+        /// BafudaクラスのCardsのManth属性に対する一致を問い合わせる操作。
+        /// </summary>
+        /// <param name="matchingCard">BaufdaクラスのCardsに対し、問い合わせを行う集合。</param>
         /// <returns></returns>
         public bool isMatchManth(List<Card> matchingCards)
         {
@@ -326,6 +404,31 @@ namespace Roppyakken
                 if (isMatch) break;
             }
             return isMatch;
+        }
+        /// <summary>
+        /// 引数にあるカード同士の一致を問い合わせる操作。
+        /// </summary>
+        /// <param name="card1"></param>
+        /// <param name="card2"></param>
+        /// <returns></returns>
+        public bool isMatchManth(Card card1, Card card2)
+        {
+            return card1.Manth == card2.Manth;
+        }
+        /// <summary>
+        /// BafudaクラスのCardsのManth属性に対する一致件数を問い合わせる操作。
+        /// </summary>
+        /// <param name="card"></param>
+        /// <returns></returns>
+        public int MatchManthCount(Card card)
+        {
+            int matchCount = 0;
+            foreach (var manth in ManthList())
+            {
+                if(card.Manth == manth)
+                    matchCount++;
+            }
+            return matchCount;
         }
         /// <summary>
         /// BafudaクラスのCardsからManth属性だけを取り出して返す。
@@ -344,28 +447,71 @@ namespace Roppyakken
             }
             return manthList;
         }
+        /// <summary>
+        /// 場札に対し、引数Cardで、isMatchManthがtrueかつ、MacthManthCountが1の場合の操作。
+        /// </summary>
+        /// <param name="card"></param>
+        public void ThrowToMatch(Player player, Card playerCard)
+        {
+            // require
+            if (!isMatchManth(playerCard)) throw new Exception("異常な組み合わせです。select card was not match manth bafuda");
+            if (!isMatchManth(playerCard, MatchingCard(playerCard))) throw new Exception("異常な組み合わせです。select card was not match manth bafuda");
+
+            player.AddKirifuda(playerCard);
+            player.AddKirifuda(MatchingCard(playerCard));
+        }
+        /// <summary>
+        /// 場札に対し、引数Cardで、isMatchManthがtrueのかつ、MacthManthCountが複数の場合の操作。
+        /// </summary>
+        /// <param name="playerCard"></param>
+        /// <param name="bafuda"></param>
+        /// <param name="count">引数count番目の場札を切る。</param>
+        public void ThrowToMatch(Player player, Card playerCard, int count)
+        {
+            // require
+            if (!isMatchManth(playerCard, MatchingCard(playerCard))) throw new Exception("異常な組み合わせです。select card was not match manth bafuda");
+            if (!isMatchManth(playerCard, cards[count])) throw new Exception("異常な組み合わせです。select card was not match manth bafuda");
+
+            // cardとcount番目の場札の月が一致する。
+            player.AddKirifuda(playerCard);
+            player.AddKirifuda(cards[count]);
+        }
+        /// <summary>
+        /// 一致するカードを返す。
+        /// </summary>
+        /// <param name="playerCard"></param>
+        /// <returns></returns>
+        public Card MatchingCard(Card playerCard)
+        {
+            return cards.Where(bafudaCard => bafudaCard.Manth == playerCard.Manth).Single();
+        }
     }
     class Manager
     {
         public Manager(int count)
         {
             playCount = count;
-            build(count);
+            Build(count);
         }
         private int playCount;
         private Yamafuda yamafuda = new Yamafuda();
         private List<Player> players = new List<Player>();
         private Bafuda bafuda;
-        private void build(int count)
+        private void Build(int count)
         {
             bafuda = new Bafuda("東1棟1F席1", yamafuda);
             if (count == 2)
             {
                 bafuda.TakeToYamafuda(8);
-                players.Add(new Player("太郎",yamafuda));
-                players.Add(new Player("和美",yamafuda));
+                players.Add(new Player("太郎", yamafuda));
+                players.Add(new Player("和美", yamafuda));
                 players[0].TakeToYamafuda(8);
                 players[1].TakeToYamafuda(8);
+                players = players.OrderBy(i => Guid.NewGuid()).ToList();
+                players[0].PlayerState = State.Running;
+                players[1].PlayerState = State.Waiting;
+                players[0].PlayerHandle = Handle.Auto;
+                players[1].PlayerHandle = Handle.Auto;
             }
             if (count == 3)
             {
@@ -376,8 +522,41 @@ namespace Roppyakken
                 players[0].TakeToYamafuda(7);
                 players[1].TakeToYamafuda(7);
                 players[2].TakeToYamafuda(7);
+                players = players.OrderBy(i => Guid.NewGuid()).ToList();
+                players[0].PlayerState = State.Running;
+                players[1].PlayerState = State.Waiting;
+                players[2].PlayerState = State.Waiting;
+                players[0].PlayerHandle = Handle.Auto;
+                players[1].PlayerHandle = Handle.Auto;
+                players[2].PlayerHandle = Handle.Auto;
             }
         }
+        public void Play()
+        {
+            Player currentPlayer = players.Single(player => player.PlayerState == State.Running);
+            int current = players.IndexOf(currentPlayer);
+            while (true)
+            {
+                if (current == players.Count)
+                    current = 0;
+                if(currentPlayer.PlayerHandle == Handle.Auto)
+                {
+
+                }
+            }
+        }
+    }
+    [Flags]
+    enum State
+    {
+        Waiting = 0x1,
+        Running = 0x2
+    }
+    [Flags]
+    enum Handle
+    {
+        Manual = 0x1,
+        Auto = 0x2
     }
 
 }

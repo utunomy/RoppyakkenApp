@@ -88,30 +88,30 @@ namespace RoppyakkenApplication
         /// <summary>
         /// CardsメンバーはPlayerクラスによる手札の実装である。
         /// </summary>
-        protected List<Card> cards = new List<Card>();
-        public List<Card> Cards { get { return cards; } }
-        public void AddCard(Card card)
+        protected List<Card> hand = new List<Card>();
+        public List<Card> Hand { get { return hand; } }
+        public void AddHand(Card card)
         {
             // require
-            if (cards == null) throw new ArgumentNullException();
+            if (hand == null) throw new ArgumentNullException();
 
-            this.cards.Add(card);
+            this.hand.Add(card);
             // ビットを立てる。
             handPattern |= card.CardPattern;
         }
-        public void RemoveCard(Card card)
+        public void RemoveHand(Card card)
         {
             // require
-            if (cards == null) throw new ArgumentNullException();
-            if (cards.Count <= 0) throw new Exception("CardSet.Cardsが空です。");
+            if (hand == null) throw new ArgumentNullException();
+            if (hand.Count <= 0) throw new Exception("CardSet.Cardsが空です。");
 
-            cards.Remove(card);
+            hand.Remove(card);
             // ビットを落とす。
             handPattern &= ~card.CardPattern;
         }
-        public Pattern GetCardPattern(int index)
+        public Pattern GetHandPattern(int index)
         {
-            return cards[index].CardPattern;
+            return hand[index].CardPattern;
         }
         /// <summary>
         /// Playerクラスの開始状態の構築。呼び出し回数はプレイ人数によって決定する。
@@ -124,7 +124,7 @@ namespace RoppyakkenApplication
             if (yamafuda.CardStack.Count == 0) throw new Exception("CardStackが空です。");
 
             Card card = yamafuda.CardPop();
-            AddCard(card);
+            AddHand(card);
         }
         /// <summary>
         /// Playerクラスの開始状態の構築。count回数だけCardをPopする。呼び出し回数はプレイ人数によって決定する。
@@ -149,10 +149,10 @@ namespace RoppyakkenApplication
         public Card WhereFristToManth(Card card)
         {
             // require
-            if (cards == null) throw new ArgumentNullException();
-            if (cards.Count <= 0) throw new Exception("CardSet.Cardsが空です。");
+            if (hand == null) throw new ArgumentNullException();
+            if (hand.Count <= 0) throw new Exception("CardSet.Cardsが空です。");
 
-            return cards.Where(firstCard => firstCard.Manth == card.Manth).First();
+            return hand.Where(firstCard => firstCard.Manth == card.Manth).First();
         }
     }
     /// <summary>
@@ -243,12 +243,12 @@ namespace RoppyakkenApplication
         /// <param name="index">場札に対するインデックス</param>
         public void ThrowTo(Bafuda bafuda, Card playerCard, int index)
         {
-            // 例外処理はbafudaクラス内に閉じ込める。
-            bafuda.RemoveCard(bafuda.Cards[index]);
-            RemoveCard(playerCard);
-
             // 場札に一致する札が存在するため一致する札を一枚tokutenfudaに加える。
-            bafuda.TakeToMatch(this, cards[index], index);
+            bafuda.TakeToMatch(this, playerCard, index);
+
+            // 例外処理はbafudaクラス内に閉じ込める。
+            bafuda.RemoveHand(bafuda.Hand[index]);
+            RemoveHand(playerCard);
         }
         /// <summary>
         /// 選択肢は、異常な入力に対してExceptionを発生させる事で閉じている必要がある。
@@ -260,19 +260,19 @@ namespace RoppyakkenApplication
             if (bafuda.isMatchManth(playerCard))
             {
                 int matchCount = bafuda.MatchManthCount(playerCard);
-                if (1 > matchCount)
+                if (1 < matchCount)
                 {
                     List<Card> matchedCards = bafuda.MatchedCards(playerCard);
-                    ThrowTo(bafuda, playerCard, matchedCards.IndexOf(matchedCards[0]));
+                    ThrowTo(bafuda, playerCard, bafuda.Hand.IndexOf(matchedCards[0]));
                 }
                 else if (1 == matchCount)
                 {
-                    // 例外処理はbafudaクラス内に閉じ込める。
-                    bafuda.RemoveCard(bafuda.MatchedCard(playerCard));
-                    RemoveCard(playerCard);
-
                     // 場札に一致する札が存在するため一致する札を一枚tokutenfudaに加える。
                     bafuda.TakeToMatch(this, playerCard);
+
+                    // 例外処理はbafudaクラス内に閉じ込める。
+                    bafuda.RemoveHand(bafuda.MatchedCard(playerCard));
+                    RemoveHand(playerCard);
                 }
                 else
                 {
@@ -282,8 +282,8 @@ namespace RoppyakkenApplication
             else
             {
                 // 例外処理はbafudaクラス内に閉じ込める。
-                bafuda.AddCard(playerCard);
-                RemoveCard(playerCard);
+                bafuda.AddHand(playerCard);
+                RemoveHand(playerCard);
             }
         }
         /// <summary>
@@ -296,6 +296,7 @@ namespace RoppyakkenApplication
             if (bafuda.isMatchManth(playerCard))
             {
                 int matchCount = bafuda.MatchManthCount(playerCard);
+
                 if (1 > matchCount)
                 {
                     while (true)
@@ -304,11 +305,11 @@ namespace RoppyakkenApplication
                         ConsoleKey consoleKey = Console.ReadKey(true).Key;
                         int index;
                         if (!Int32.TryParse(consoleKey.ToString(), out index)) throw new Exception();
-                        Console.Write("{0} を切りますか？ Enter or N\n", bafuda.Cards[index].CardPattern);
+                        Console.Write("{0} を切りますか？ Enter or N\n", bafuda.Hand[index].CardPattern);
                         consoleKey = Console.ReadKey(true).Key;
                         if (consoleKey == ConsoleKey.Enter)
                         {
-                            Console.Write("{0} を切りました。\n", bafuda.Cards[index].CardPattern);
+                            Console.Write("{0} を切りました。\n", bafuda.Hand[index].CardPattern);
                             List<Card> matchedCards = bafuda.MatchedCards(playerCard);
 
                             // require
@@ -328,8 +329,8 @@ namespace RoppyakkenApplication
                 else if (1 == matchCount)
                 {
                     // 例外処理はbafudaクラス内に閉じ込める。
-                    bafuda.RemoveCard(bafuda.MatchedCard(playerCard));
-                    RemoveCard(playerCard);
+                    bafuda.RemoveHand(bafuda.MatchedCard(playerCard));
+                    RemoveHand(playerCard);
 
                     // 場札に一致する札が存在するため一致する札を一枚tokutenfudaに加える。
                     bafuda.TakeToMatch(this, playerCard);
@@ -342,8 +343,8 @@ namespace RoppyakkenApplication
             else
             {
                 // 例外処理はbafudaクラス内に閉じ込める。
-                bafuda.AddCard(playerCard);
-                RemoveCard(playerCard);
+                bafuda.AddHand(playerCard);
+                RemoveHand(playerCard);
             }
         }
     }
@@ -445,10 +446,10 @@ namespace RoppyakkenApplication
         public bool isMatchManth(Card card)
         {
             // require
-            if (cards == null) throw new ArgumentNullException();
-            if (cards.Count <= 0) throw new Exception("cards.Count <= 0です。");
+            if (hand == null) throw new ArgumentNullException();
+            if (hand.Count <= 0) throw new Exception("cards.Count <= 0です。");
 
-            return cards.Any(bafudaCard => bafudaCard.Manth == card.Manth);
+            return hand.Any(bafudaCard => bafudaCard.Manth == card.Manth);
         }
         /// <summary>
         /// BafudaクラスのCardsのManth属性に対する一致を問い合わせる操作。
@@ -485,8 +486,10 @@ namespace RoppyakkenApplication
             int matchCount = 0;
             foreach (var manth in ManthList())
             {
-                if(card.Manth == manth)
+                if (card.Manth == manth)
+                {
                     matchCount++;
+                }
             }
             return matchCount;
         }
@@ -497,11 +500,11 @@ namespace RoppyakkenApplication
         public List<int> ManthList()
         {
             // require
-            if (Cards == null) throw new ArgumentNullException();
-            if (Cards.Count < 0) throw new ArgumentOutOfRangeException();
+            if (Hand == null) throw new ArgumentNullException();
+            if (Hand.Count < 0) throw new ArgumentOutOfRangeException();
 
             List<int> manthList = new List<int>();
-            foreach (var card in Cards)
+            foreach (var card in Hand)
             {
                 manthList.Add(card.Manth);
             }
@@ -525,16 +528,16 @@ namespace RoppyakkenApplication
         /// </summary>
         /// <param name="playerCard"></param>
         /// <param name="bafuda"></param>
-        /// <param name="count">引数count番目の場札を切る。</param>
-        public void TakeToMatch(Player player, Card playerCard, int count)
+        /// <param name="index">引数index番目の場札を切る。</param>
+        public void TakeToMatch(Player player, Card playerCard, int index)
         {
             // require
-            if (!isMatchManth(playerCard, MatchedCard(playerCard))) throw new Exception("異常な組み合わせです。select card was not match manth bafuda");
-            if (!isMatchManth(playerCard, cards[count])) throw new Exception("異常な組み合わせです。select card was not match manth bafuda");
+            //if (!isMatchManth(playerCard, MatchedCards(playerCard)[index])) throw new Exception("異常な組み合わせです。select card was not match manth bafuda");
+            if (!isMatchManth(playerCard, hand[index])) throw new Exception("異常な組み合わせです。select card was not match manth bafuda");
 
             // cardとcount番目の場札の月が一致する。
             player.AddTokutenfuda(playerCard);
-            player.AddTokutenfuda(cards[count]);
+            player.AddTokutenfuda(hand[index]);
         }
         /// <summary>
         /// 一致するカードを返す。
@@ -543,7 +546,11 @@ namespace RoppyakkenApplication
         /// <returns></returns>
         public Card MatchedCard(Card playerCard)
         {
-            return cards.Where(bafudaCard => bafudaCard.Manth == playerCard.Manth).Single();
+            // require
+            if (hand == null) throw new ArgumentNullException();
+            if (hand.Count < 1) throw new Exception();
+
+            return hand.Where(bafudaCard => bafudaCard.Manth == playerCard.Manth).Single();
         }
         /// <summary>
         /// 一致するカードを返す。
@@ -552,7 +559,11 @@ namespace RoppyakkenApplication
         /// <returns></returns>
         public List<Card> MatchedCards(Card playerCard)
         {
-            return cards.Where(bafudaCard => bafudaCard.Manth == playerCard.Manth).ToList();
+            // require
+            if (hand == null) throw new ArgumentNullException();
+            if (hand.Count < 1) throw new Exception();
+
+            return hand.Where(bafudaCard => bafudaCard.Manth == playerCard.Manth).ToList();
         }
     }
     class Manager
@@ -581,6 +592,7 @@ namespace RoppyakkenApplication
                 players[1].PlayerState = State.Waiting;
                 players[0].PlayerHandle = Handle.Auto;
                 players[1].PlayerHandle = Handle.Auto;
+                Play();
             }
             if (count == 3)
             {
@@ -598,6 +610,7 @@ namespace RoppyakkenApplication
                 players[0].PlayerHandle = Handle.Auto;
                 players[1].PlayerHandle = Handle.Auto;
                 players[2].PlayerHandle = Handle.Auto;
+                Play();
             }
         }
         public Player GetNextPlayer(Player currentPlayer)
@@ -610,7 +623,7 @@ namespace RoppyakkenApplication
         }
         public bool isNextPlayer()
         {
-            return players.Any(player => player.Cards.Count > 0);
+            return players.Any(player => player.Hand.Count > 0);
         }
         public void Fill()
         {
@@ -680,6 +693,11 @@ namespace RoppyakkenApplication
 
             player.Score = score;
         }
+        /// <summary>
+        /// ビットカウント
+        /// </summary>
+        /// <param name="val"></param>
+        /// <returns></returns>
         public int BitCnt1(long val)
         {
             int cnt = 0;
@@ -691,20 +709,23 @@ namespace RoppyakkenApplication
             }
             return cnt;
         }
+        /// <summary>
+        /// 六百間をプレイする。
+        /// </summary>
         public void Play()
         {
             Player currentPlayer = players.Single(player => player.PlayerState == State.Running);
-
+            
             while (isNextPlayer())
             {
                 if (currentPlayer.PlayerHandle == Handle.Auto)
                 {
                     // 手札から場札に一枚出す。
-                    currentPlayer.ThrowToAuto(bafuda, currentPlayer.Cards[0]);
+                    currentPlayer.ThrowToAuto(bafuda, currentPlayer.Hand[0]);
                     
                     // 山札から場札に一枚出す。
                     Card popCard = yamafuda.CardPop();
-                    currentPlayer.AddCard(popCard);
+                    currentPlayer.AddHand(popCard);
                     currentPlayer.ThrowToAuto(bafuda, popCard);
                     CalculateScore(currentPlayer);
                     Fill();
@@ -726,16 +747,16 @@ namespace RoppyakkenApplication
                         switch (consoleKey)
                         {
                             case ConsoleKey.D0:
-                                if (currentPlayer.Cards.Count < 1) break;
-                                Console.Write("{0} を切りますか？ Enter or N\n", currentPlayer.GetCardPattern(0));
+                                if (currentPlayer.Hand.Count < 1) break;
+                                Console.Write("{0} を切りますか？ Enter or N\n", currentPlayer.GetHandPattern(0));
                                 consoleKey = Console.ReadKey(true).Key;
                                 if (consoleKey == ConsoleKey.Enter)
                                 {
-                                    Console.Write("{0} を切りました。\n", currentPlayer.GetCardPattern(0));
-                                    currentPlayer.ThrowToManual(bafuda, currentPlayer.Cards[0]);
+                                    Console.Write("{0} を切りました。\n", currentPlayer.GetHandPattern(0));
+                                    currentPlayer.ThrowToManual(bafuda, currentPlayer.Hand[0]);
                                     // 山札から場札に一枚出す。
                                     Card popCard = yamafuda.CardPop();
-                                    currentPlayer.AddCard(popCard);
+                                    currentPlayer.AddHand(popCard);
                                     currentPlayer.ThrowToManual(bafuda, popCard);
                                     CalculateScore(currentPlayer);
                                     Fill();
@@ -755,16 +776,16 @@ namespace RoppyakkenApplication
                                 else
                                     throw new Exception("異常な入力が読み込まれました。\n");
                             case ConsoleKey.D1:
-                                if (currentPlayer.Cards.Count < 2) break;
-                                Console.Write("{0} を切りますか？ Enter or N\n", currentPlayer.GetCardPattern(1));
+                                if (currentPlayer.Hand.Count < 2) break;
+                                Console.Write("{0} を切りますか？ Enter or N\n", currentPlayer.GetHandPattern(1));
                                 consoleKey = Console.ReadKey(true).Key;
                                 if (consoleKey == ConsoleKey.Enter)
                                 {
-                                    Console.Write("{0} を切りました。\n", currentPlayer.GetCardPattern(1));
-                                    currentPlayer.ThrowToManual(bafuda, currentPlayer.Cards[1]);
+                                    Console.Write("{0} を切りました。\n", currentPlayer.GetHandPattern(1));
+                                    currentPlayer.ThrowToManual(bafuda, currentPlayer.Hand[1]);
                                     // 山札から場札に一枚出す。
                                     Card popCard = yamafuda.CardPop();
-                                    currentPlayer.AddCard(popCard);
+                                    currentPlayer.AddHand(popCard);
                                     currentPlayer.ThrowToManual(bafuda, popCard);
                                     CalculateScore(currentPlayer);
                                     Fill();
@@ -784,16 +805,16 @@ namespace RoppyakkenApplication
                                 else
                                     throw new Exception("異常な入力が読み込まれました。\n");
                             case ConsoleKey.D2:
-                                if (currentPlayer.Cards.Count < 3) break;
-                                Console.Write("{0} を切りますか？ Enter or N\n", currentPlayer.GetCardPattern(2));
+                                if (currentPlayer.Hand.Count < 3) break;
+                                Console.Write("{0} を切りますか？ Enter or N\n", currentPlayer.GetHandPattern(2));
                                 consoleKey = Console.ReadKey(true).Key;
                                 if (consoleKey == ConsoleKey.Enter)
                                 {
-                                    Console.Write("{0} を切りました。\n", currentPlayer.GetCardPattern(2));
-                                    currentPlayer.ThrowToManual(bafuda, currentPlayer.Cards[2]);
+                                    Console.Write("{0} を切りました。\n", currentPlayer.GetHandPattern(2));
+                                    currentPlayer.ThrowToManual(bafuda, currentPlayer.Hand[2]);
                                     // 山札から場札に一枚出す。
                                     Card popCard = yamafuda.CardPop();
-                                    currentPlayer.AddCard(popCard);
+                                    currentPlayer.AddHand(popCard);
                                     currentPlayer.ThrowToManual(bafuda, popCard);
                                     CalculateScore(currentPlayer);
                                     Fill();
@@ -813,16 +834,16 @@ namespace RoppyakkenApplication
                                 else
                                     throw new Exception("異常な入力が読み込まれました。\n");
                             case ConsoleKey.D3:
-                                if (currentPlayer.Cards.Count < 4) break;
-                                Console.Write("{0} を切りますか？ Enter or N\n", currentPlayer.GetCardPattern(3));
+                                if (currentPlayer.Hand.Count < 4) break;
+                                Console.Write("{0} を切りますか？ Enter or N\n", currentPlayer.GetHandPattern(3));
                                 consoleKey = Console.ReadKey(true).Key;
                                 if (consoleKey == ConsoleKey.Enter)
                                 {
-                                    Console.Write("{0} を切りました。\n", currentPlayer.GetCardPattern(3));
-                                    currentPlayer.ThrowToManual(bafuda, currentPlayer.Cards[3]);
+                                    Console.Write("{0} を切りました。\n", currentPlayer.GetHandPattern(3));
+                                    currentPlayer.ThrowToManual(bafuda, currentPlayer.Hand[3]);
                                     // 山札から場札に一枚出す。
                                     Card popCard = yamafuda.CardPop();
-                                    currentPlayer.AddCard(popCard);
+                                    currentPlayer.AddHand(popCard);
                                     currentPlayer.ThrowToManual(bafuda, popCard);
                                     CalculateScore(currentPlayer);
                                     Fill();
@@ -842,16 +863,16 @@ namespace RoppyakkenApplication
                                 else
                                     throw new Exception("異常な入力が読み込まれました。\n");
                             case ConsoleKey.D4:
-                                if (currentPlayer.Cards.Count < 5) break;
-                                Console.Write("{0} を切りますか？ Enter or N\n", currentPlayer.GetCardPattern(4));
+                                if (currentPlayer.Hand.Count < 5) break;
+                                Console.Write("{0} を切りますか？ Enter or N\n", currentPlayer.GetHandPattern(4));
                                 consoleKey = Console.ReadKey(true).Key;
                                 if (consoleKey == ConsoleKey.Enter)
                                 {
-                                    Console.Write("{0} を切りました。\n", currentPlayer.GetCardPattern(4));
-                                    currentPlayer.ThrowToManual(bafuda, currentPlayer.Cards[4]);
+                                    Console.Write("{0} を切りました。\n", currentPlayer.GetHandPattern(4));
+                                    currentPlayer.ThrowToManual(bafuda, currentPlayer.Hand[4]);
                                     // 山札から場札に一枚出す。
                                     Card popCard = yamafuda.CardPop();
-                                    currentPlayer.AddCard(popCard);
+                                    currentPlayer.AddHand(popCard);
                                     currentPlayer.ThrowToManual(bafuda, popCard);
                                     CalculateScore(currentPlayer);
                                     Fill();
@@ -871,16 +892,16 @@ namespace RoppyakkenApplication
                                 else
                                     throw new Exception("異常な入力が読み込まれました。\n");
                             case ConsoleKey.D5:
-                                if (currentPlayer.Cards.Count < 6) break;
-                                Console.Write("{0} を切りますか？ Enter or N\n", currentPlayer.GetCardPattern(5));
+                                if (currentPlayer.Hand.Count < 6) break;
+                                Console.Write("{0} を切りますか？ Enter or N\n", currentPlayer.GetHandPattern(5));
                                 consoleKey = Console.ReadKey(true).Key;
                                 if (consoleKey == ConsoleKey.Enter)
                                 {
-                                    Console.Write("{0} を切りました。\n", currentPlayer.GetCardPattern(5));
-                                    currentPlayer.ThrowToManual(bafuda, currentPlayer.Cards[5]);
+                                    Console.Write("{0} を切りました。\n", currentPlayer.GetHandPattern(5));
+                                    currentPlayer.ThrowToManual(bafuda, currentPlayer.Hand[5]);
                                     // 山札から場札に一枚出す。
                                     Card popCard = yamafuda.CardPop();
-                                    currentPlayer.AddCard(popCard);
+                                    currentPlayer.AddHand(popCard);
                                     currentPlayer.ThrowToManual(bafuda, popCard);
                                     CalculateScore(currentPlayer);
                                     Fill();
@@ -900,16 +921,16 @@ namespace RoppyakkenApplication
                                 else
                                     throw new Exception("異常な入力が読み込まれました。\n");
                             case ConsoleKey.D6:
-                                if (currentPlayer.Cards.Count < 7) break;
-                                Console.Write("{0} を切りますか？ Enter or N\n", currentPlayer.GetCardPattern(6));
+                                if (currentPlayer.Hand.Count < 7) break;
+                                Console.Write("{0} を切りますか？ Enter or N\n", currentPlayer.GetHandPattern(6));
                                 consoleKey = Console.ReadKey(true).Key;
                                 if (consoleKey == ConsoleKey.Enter)
                                 {
-                                    Console.Write("{0} を切りました。\n", currentPlayer.GetCardPattern(6));
-                                    currentPlayer.ThrowToManual(bafuda, currentPlayer.Cards[6]);
+                                    Console.Write("{0} を切りました。\n", currentPlayer.GetHandPattern(6));
+                                    currentPlayer.ThrowToManual(bafuda, currentPlayer.Hand[6]);
                                     // 山札から場札に一枚出す。
                                     Card popCard = yamafuda.CardPop();
-                                    currentPlayer.AddCard(popCard);
+                                    currentPlayer.AddHand(popCard);
                                     currentPlayer.ThrowToManual(bafuda, popCard);
                                     CalculateScore(currentPlayer);
                                     Fill();
@@ -929,16 +950,16 @@ namespace RoppyakkenApplication
                                 else
                                     throw new Exception("異常な入力が読み込まれました。\n");
                             case ConsoleKey.D7:
-                                if (currentPlayer.Cards.Count < 8) break;
-                                Console.Write("{0} を切りますか？ Enter or N\n", currentPlayer.GetCardPattern(7));
+                                if (currentPlayer.Hand.Count < 8) break;
+                                Console.Write("{0} を切りますか？ Enter or N\n", currentPlayer.GetHandPattern(7));
                                 consoleKey = Console.ReadKey(true).Key;
                                 if (consoleKey == ConsoleKey.Enter)
                                 {
-                                    Console.Write("{0} を切りました。\n", currentPlayer.GetCardPattern(7));
-                                    currentPlayer.ThrowToManual(bafuda, currentPlayer.Cards[7]);
+                                    Console.Write("{0} を切りました。\n", currentPlayer.GetHandPattern(7));
+                                    currentPlayer.ThrowToManual(bafuda, currentPlayer.Hand[7]);
                                     // 山札から場札に一枚出す。
                                     Card popCard = yamafuda.CardPop();
-                                    currentPlayer.AddCard(popCard);
+                                    currentPlayer.AddHand(popCard);
                                     currentPlayer.ThrowToManual(bafuda, popCard);
                                     CalculateScore(currentPlayer);
                                     Fill();

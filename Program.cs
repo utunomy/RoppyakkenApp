@@ -245,7 +245,7 @@ namespace RoppyakkenApplication
         {
             // 例外処理はbafudaクラス内に閉じ込める。
             bafuda.RemoveCard(bafuda.Cards[index]);
-            RemoveCard(cards[index]);
+            RemoveCard(playerCard);
 
             // 場札に一致する札が存在するため一致する札を一枚tokutenfudaに加える。
             bafuda.ThrowToMatch(this, cards[index], index);

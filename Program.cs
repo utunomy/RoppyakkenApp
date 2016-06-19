@@ -248,7 +248,7 @@ namespace RoppyakkenApplication
             RemoveCard(playerCard);
 
             // 場札に一致する札が存在するため一致する札を一枚tokutenfudaに加える。
-            bafuda.ThrowToMatch(this, cards[index], index);
+            bafuda.TakeToMatch(this, cards[index], index);
         }
         /// <summary>
         /// 選択肢は、異常な入力に対してExceptionを発生させる事で閉じている必要がある。
@@ -272,7 +272,7 @@ namespace RoppyakkenApplication
                     RemoveCard(playerCard);
 
                     // 場札に一致する札が存在するため一致する札を一枚tokutenfudaに加える。
-                    bafuda.ThrowToMatch(this, playerCard);
+                    bafuda.TakeToMatch(this, playerCard);
                 }
                 else
                 {
@@ -332,7 +332,7 @@ namespace RoppyakkenApplication
                     RemoveCard(playerCard);
 
                     // 場札に一致する札が存在するため一致する札を一枚tokutenfudaに加える。
-                    bafuda.ThrowToMatch(this, playerCard);
+                    bafuda.TakeToMatch(this, playerCard);
                 }
                 else
                 {
@@ -511,7 +511,7 @@ namespace RoppyakkenApplication
         /// 場札に対し、引数Cardで、isMatchManthがtrueかつ、MacthManthCountが1の場合の操作。
         /// </summary>
         /// <param name="card"></param>
-        public void ThrowToMatch(Player player, Card playerCard)
+        public void TakeToMatch(Player player, Card playerCard)
         {
             // require
             if (!isMatchManth(playerCard)) throw new Exception("異常な組み合わせです。select card was not match manth bafuda");
@@ -526,7 +526,7 @@ namespace RoppyakkenApplication
         /// <param name="playerCard"></param>
         /// <param name="bafuda"></param>
         /// <param name="count">引数count番目の場札を切る。</param>
-        public void ThrowToMatch(Player player, Card playerCard, int count)
+        public void TakeToMatch(Player player, Card playerCard, int count)
         {
             // require
             if (!isMatchManth(playerCard, MatchedCard(playerCard))) throw new Exception("異常な組み合わせです。select card was not match manth bafuda");
@@ -680,7 +680,7 @@ namespace RoppyakkenApplication
 
             player.Score = score;
         }
-        int BitCnt1(long val)
+        public int BitCnt1(long val)
         {
             int cnt = 0;
             while (val != 0)
@@ -689,7 +689,7 @@ namespace RoppyakkenApplication
                     cnt++;
                 val >>= 1;
             }
-            return cnt
+            return cnt;
         }
         public void Play()
         {

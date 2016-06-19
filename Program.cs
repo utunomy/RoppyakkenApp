@@ -83,8 +83,8 @@ namespace RoppyakkenApplication
         /// <summary>
         /// Handメンバーはコンソールに手札を表示するための要素である。
         /// </summary>
-        protected Pattern hand;
-        public Pattern Hand { get { return hand; } }
+        protected Pattern handPattern;
+        public Pattern HandPattern { get { return handPattern; } }
         /// <summary>
         /// CardsメンバーはPlayerクラスによる手札の実装である。
         /// </summary>
@@ -97,7 +97,7 @@ namespace RoppyakkenApplication
 
             this.cards.Add(card);
             // ビットを立てる。
-            hand |= card.CardPattern;
+            handPattern |= card.CardPattern;
         }
         public void RemoveCard(Card card)
         {
@@ -107,7 +107,7 @@ namespace RoppyakkenApplication
 
             cards.Remove(card);
             // ビットを落とす。
-            hand &= ~card.CardPattern;
+            handPattern &= ~card.CardPattern;
         }
         public Pattern GetCardPattern(int index)
         {
@@ -166,14 +166,17 @@ namespace RoppyakkenApplication
         /// <summary>
         /// 得点となる札。
         /// </summary>
-        private List<Card> kirifuda = new List<Card>();
-        public List<Card> Kirifuda { get { return kirifuda; } }
-        public void AddKirifuda(Card card)
+        private List<Card> tokutenfuda = new List<Card>();
+        private Pattern tokutenfudaPattern;
+        public List<Card> Tokutenfuda { get { return tokutenfuda; } }
+        public Pattern TokutenfudaPattern { get { return tokutenfudaPattern; } }
+        public void AddTokutenfuda(Card card)
         {
             // require
-            if (kirifuda == null) throw new ArgumentNullException();
+            if (tokutenfuda == null) throw new ArgumentNullException();
 
-            kirifuda.Add(card);
+            tokutenfuda.Add(card);
+            tokutenfudaPattern |= card.CardPattern;
         }
         /// <summary>
         /// 現在の得点。
@@ -196,7 +199,7 @@ namespace RoppyakkenApplication
         }
         /// <summary>
         /// haguriCardのManth属性が、BafudaクラスのCardsのManth属性と一致する場合（isMatchManth == trueの場合）、
-        /// 一致する1枚のCardとhaguriCardをPlayerクラスのkirifudaに加える。
+        /// 一致する1枚のCardとhaguriCardをPlayerクラスのtokutenfudaに加える。
         /// </summary>
         /// <param name="haguriCard">山札から引いたCard。</param>
         /// <param name="bafuda"></param>
@@ -211,14 +214,14 @@ namespace RoppyakkenApplication
 
             // BafudaクラスのCardsからリムーブする。
             bafuda.RemoveCard(getCard);
-            // Playerのkirifudaに一致する2枚を追加する。
-            AddKirifuda(haguriCard);
-            AddKirifuda(getCard);
+            // Playerのtokutenfudaに一致する2枚を追加する。
+            Addtokutenfuda(haguriCard);
+            Addtokutenfuda(getCard);
 
         }
         /// <summary>
         /// haguriCardのManth属性が、BafudaクラスのCardsのManth属性と一致する場合（isMatchManth == trueの場合）、
-        /// 一致する複数枚のCardから選ばれた一枚のCardと、haguriCardをPlayerクラスのkirifudaに加える。
+        /// 一致する複数枚のCardから選ばれた一枚のCardと、haguriCardをPlayerクラスのtokutenfudaに加える。
         /// </summary>
         /// <param name="haguriCard"></param>
         /// <param name="bafuda"></param>
@@ -227,9 +230,9 @@ namespace RoppyakkenApplication
         {
             // BafudaクラスのCardsからリムーブする。
             bafuda.RemoveCard(getCard);
-            // Playerのkirifudaに一致する2枚を追加する。
-            AddKirifuda(haguriCard);
-            AddKirifuda(getCard);
+            // Playerのtokutenfudaに一致する2枚を追加する。
+            Addtokutenfuda(haguriCard);
+            Addtokutenfuda(getCard);
         }
         */
         /// <summary>
@@ -244,7 +247,7 @@ namespace RoppyakkenApplication
             bafuda.RemoveCard(bafuda.Cards[index]);
             RemoveCard(cards[index]);
 
-            // 場札に一致する札が存在するため一致する札を一枚kirifudaに加える。
+            // 場札に一致する札が存在するため一致する札を一枚tokutenfudaに加える。
             bafuda.ThrowToMatch(this, cards[index], index);
         }
         /// <summary>
@@ -268,7 +271,7 @@ namespace RoppyakkenApplication
                     bafuda.RemoveCard(bafuda.MatchedCard(playerCard));
                     RemoveCard(playerCard);
 
-                    // 場札に一致する札が存在するため一致する札を一枚kirifudaに加える。
+                    // 場札に一致する札が存在するため一致する札を一枚tokutenfudaに加える。
                     bafuda.ThrowToMatch(this, playerCard);
                 }
                 else
@@ -328,7 +331,7 @@ namespace RoppyakkenApplication
                     bafuda.RemoveCard(bafuda.MatchedCard(playerCard));
                     RemoveCard(playerCard);
 
-                    // 場札に一致する札が存在するため一致する札を一枚kirifudaに加える。
+                    // 場札に一致する札が存在するため一致する札を一枚tokutenfudaに加える。
                     bafuda.ThrowToMatch(this, playerCard);
                 }
                 else
@@ -346,69 +349,72 @@ namespace RoppyakkenApplication
     }
     class Card
     {
-        public Card(Pattern pattern, int manth)
+        public Card(Pattern pattern, int manth, int point)
         {
             this.cardPattern = pattern;
             this.manth = manth;
+            this.point = point;
         }
         private readonly Pattern cardPattern;
         public Pattern CardPattern { get { return cardPattern; } }
         private readonly int manth;
         public int Manth { get { return manth; } }
+        private readonly int point;
+        public int Point { get { return point; } }
     }
     class Yamafuda
     {
         public Yamafuda()
         {
             List<Card> cards = new List<Card>();
-            cards.Add(new Card(Pattern.Matsu1, 1));
-            cards.Add(new Card(Pattern.Matsu2, 1));
-            cards.Add(new Card(Pattern.MatsuAndTanzakuAka, 1));
-            cards.Add(new Card(Pattern.MatsuAndTsuru, 1));
-            cards.Add(new Card(Pattern.Ume1, 2));
-            cards.Add(new Card(Pattern.Ume2, 2));
-            cards.Add(new Card(Pattern.UmeAndTanzakuAka, 2));
-            cards.Add(new Card(Pattern.UmeAndUguisu, 2));
-            cards.Add(new Card(Pattern.Sakura1, 3));
-            cards.Add(new Card(Pattern.Sakura2, 3));
-            cards.Add(new Card(Pattern.SakuraAndMaku, 3));
-            cards.Add(new Card(Pattern.SakuraAndTanzakuAka, 3));
-            cards.Add(new Card(Pattern.Fuji1, 4));
-            cards.Add(new Card(Pattern.Fuji2, 4));
-            cards.Add(new Card(Pattern.FujiAndHototogisu, 4));
-            cards.Add(new Card(Pattern.FujiAndTanzakuAka, 4));
-            cards.Add(new Card(Pattern.Ayame1, 5));
-            cards.Add(new Card(Pattern.Ayame2, 5));
-            cards.Add(new Card(Pattern.AyameAndHashi, 5));
-            cards.Add(new Card(Pattern.AyameAndTanzakuAka, 5));
-            cards.Add(new Card(Pattern.Botan1, 6));
-            cards.Add(new Card(Pattern.Botan2, 6));
-            cards.Add(new Card(Pattern.BotanAndChou, 6));
-            cards.Add(new Card(Pattern.BotanAndTanzakuAo, 6));
-            cards.Add(new Card(Pattern.Hagi1, 7));
-            cards.Add(new Card(Pattern.Hagi2, 7));
-            cards.Add(new Card(Pattern.HagiAndInoshishi, 7));
-            cards.Add(new Card(Pattern.HagiAndTanzakuAka, 7));
-            cards.Add(new Card(Pattern.Sakura1, 8));
-            cards.Add(new Card(Pattern.Sakura2, 8));
-            cards.Add(new Card(Pattern.SakuraAndMaku, 8));
-            cards.Add(new Card(Pattern.SakuraAndTanzakuAka, 8));
-            cards.Add(new Card(Pattern.Kiku1, 9));
-            cards.Add(new Card(Pattern.Kiku2, 9));
-            cards.Add(new Card(Pattern.KikuAndOchoko, 9));
-            cards.Add(new Card(Pattern.KikuAndTanzakuAo, 9));
-            cards.Add(new Card(Pattern.Momiji1, 10));
-            cards.Add(new Card(Pattern.Momiji2, 10));
-            cards.Add(new Card(Pattern.MomijiAndShika, 10));
-            cards.Add(new Card(Pattern.MomijiAndTanzakuAo, 10));
-            cards.Add(new Card(Pattern.Yanagi, 11));
-            cards.Add(new Card(Pattern.YanagiAndKaeru, 11));
-            cards.Add(new Card(Pattern.YanagiAndTanzakuAka, 11));
-            cards.Add(new Card(Pattern.YanagiAndTsubame, 11));
-            cards.Add(new Card(Pattern.Kiri1, 12));
-            cards.Add(new Card(Pattern.Kiri2, 12));
-            cards.Add(new Card(Pattern.KiriAndHouou, 12));
-            cards.Add(new Card(Pattern.KiriAndYellow, 12));
+            cards.Add(new Card(Pattern.Matsu1, 1, 0));
+            cards.Add(new Card(Pattern.Matsu2, 1, 0));
+            cards.Add(new Card(Pattern.MatsuAndTanzakuAka, 1, 10));
+            cards.Add(new Card(Pattern.MatsuAndTsuru, 1, 50));
+            cards.Add(new Card(Pattern.Ume1, 2, 0));
+            cards.Add(new Card(Pattern.Ume2, 2, 0));
+            cards.Add(new Card(Pattern.UmeAndTanzakuAka, 2, 10));
+            cards.Add(new Card(Pattern.UmeAndUguisu, 2, 50));
+            cards.Add(new Card(Pattern.Sakura1, 3, 0));
+            cards.Add(new Card(Pattern.Sakura2, 3, 0));
+            cards.Add(new Card(Pattern.SakuraAndMaku, 3, 50));
+            cards.Add(new Card(Pattern.SakuraAndTanzakuAka, 3, 10));
+            cards.Add(new Card(Pattern.Fuji1, 4, 0));
+            cards.Add(new Card(Pattern.Fuji2, 4, 0));
+            cards.Add(new Card(Pattern.FujiAndHototogisu, 4, 50));
+            cards.Add(new Card(Pattern.FujiAndTanzakuAka, 4, 10));
+            cards.Add(new Card(Pattern.Ayame1, 5, 0));
+            cards.Add(new Card(Pattern.Ayame2, 5, 0));
+            cards.Add(new Card(Pattern.AyameAndHashi, 5, 10));
+            cards.Add(new Card(Pattern.AyameAndTanzakuAka, 5, 10));
+            cards.Add(new Card(Pattern.Botan1, 6, 0));
+            cards.Add(new Card(Pattern.Botan2, 6, 0));
+            cards.Add(new Card(Pattern.BotanAndChou, 6, 10));
+            cards.Add(new Card(Pattern.BotanAndTanzakuAo, 6, 10));
+            cards.Add(new Card(Pattern.Hagi1, 7, 0));
+            cards.Add(new Card(Pattern.Hagi2, 7, 0));
+            cards.Add(new Card(Pattern.HagiAndInoshishi, 7, 10));
+            cards.Add(new Card(Pattern.HagiAndTanzakuAka, 7, 10));
+            cards.Add(new Card(Pattern.Susuki1, 8, 0));
+            cards.Add(new Card(Pattern.Susuki2, 8, 0));
+            cards.Add(new Card(Pattern.SusukiAndGan, 8, 10));
+            cards.Add(new Card(Pattern.SusukiAndTsuki, 8, 50));
+            cards.Add(new Card(Pattern.Kiku1, 9, 0));
+            cards.Add(new Card(Pattern.Kiku2, 9, 0));
+            cards.Add(new Card(Pattern.KikuAndOchoko, 9, 10));
+            cards.Add(new Card(Pattern.KikuAndTanzakuAo, 9, 10));
+            cards.Add(new Card(Pattern.Momiji1, 10, 0));
+            cards.Add(new Card(Pattern.Momiji2, 10, 0));
+            cards.Add(new Card(Pattern.MomijiAndShika, 10, 50));
+            cards.Add(new Card(Pattern.MomijiAndTanzakuAo, 10, 10));
+            cards.Add(new Card(Pattern.Yanagi, 11, 0));
+            cards.Add(new Card(Pattern.YanagiAndKaeru, 11, 50));
+            cards.Add(new Card(Pattern.YanagiAndTanzakuAka, 11, 10));
+            cards.Add(new Card(Pattern.YanagiAndTsubame, 11, 10));
+            cards.Add(new Card(Pattern.Kiri1, 12, 0));
+            cards.Add(new Card(Pattern.Kiri2, 12, 0));
+            cards.Add(new Card(Pattern.KiriAndHouou, 12, 50));
+            cards.Add(new Card(Pattern.KiriAndYellow, 12, 10));
             cards = cards.OrderBy(i => Guid.NewGuid()).ToList();
             foreach (Card card in cards)
             {
@@ -511,8 +517,8 @@ namespace RoppyakkenApplication
             if (!isMatchManth(playerCard)) throw new Exception("異常な組み合わせです。select card was not match manth bafuda");
             if (!isMatchManth(playerCard, MatchedCard(playerCard))) throw new Exception("異常な組み合わせです。select card was not match manth bafuda");
 
-            player.AddKirifuda(playerCard);
-            player.AddKirifuda(MatchedCard(playerCard));
+            player.AddTokutenfuda(playerCard);
+            player.AddTokutenfuda(MatchedCard(playerCard));
         }
         /// <summary>
         /// 場札に対し、引数Cardで、isMatchManthがtrueのかつ、MacthManthCountが複数の場合の操作。
@@ -527,8 +533,8 @@ namespace RoppyakkenApplication
             if (!isMatchManth(playerCard, cards[count])) throw new Exception("異常な組み合わせです。select card was not match manth bafuda");
 
             // cardとcount番目の場札の月が一致する。
-            player.AddKirifuda(playerCard);
-            player.AddKirifuda(cards[count]);
+            player.AddTokutenfuda(playerCard);
+            player.AddTokutenfuda(cards[count]);
         }
         /// <summary>
         /// 一致するカードを返す。
@@ -606,10 +612,89 @@ namespace RoppyakkenApplication
         {
             return players.Any(player => player.Cards.Count > 0);
         }
+        public void Fill()
+        {
+            Console.Write("場札：{0}\n", bafuda.HandPattern);
+            foreach (Player player in players)
+            {
+                Console.Write("{0}さんの手札（{1}）\n", player.Name, player.HandPattern);
+                Console.Write("{0}さんの得点札（{1}）\n", player.Name, player.TokutenfudaPattern);
+                Console.Write("{0}さんの得点（{1}）\n", player.Name, player.Score);
+            }
+        }
+        public void CalculateScore(Player player)
+        {
+            int score = 0;
+            foreach (Card card in player.Tokutenfuda)
+            {
+                score += card.Point;
+            }
+            Pattern tokutenfudaPattern = player.TokutenfudaPattern;
+            if (tokutenfudaPattern.HasFlag(Pattern.Yanagi) && tokutenfudaPattern.HasFlag(Pattern.YanagiAndKaeru) && tokutenfudaPattern.HasFlag(Pattern.YanagiAndTanzakuAka) && tokutenfudaPattern.HasFlag(Pattern.YanagiAndTsubame))
+                score += 200;
+            if (tokutenfudaPattern.HasFlag(Pattern.Ayame1) && tokutenfudaPattern.HasFlag(Pattern.Ayame2) && tokutenfudaPattern.HasFlag(Pattern.AyameAndHashi) && tokutenfudaPattern.HasFlag(Pattern.AyameAndTanzakuAka))
+                score += 50;
+            if (tokutenfudaPattern.HasFlag(Pattern.Botan1) && tokutenfudaPattern.HasFlag(Pattern.Botan2) && tokutenfudaPattern.HasFlag(Pattern.BotanAndChou) && tokutenfudaPattern.HasFlag(Pattern.BotanAndTanzakuAo))
+                score += 50;
+            if (tokutenfudaPattern.HasFlag(Pattern.Fuji1) && tokutenfudaPattern.HasFlag(Pattern.Fuji2) && tokutenfudaPattern.HasFlag(Pattern.FujiAndHototogisu) && tokutenfudaPattern.HasFlag(Pattern.FujiAndTanzakuAka))
+                score += 50;
+            if (tokutenfudaPattern.HasFlag(Pattern.Hagi1) && tokutenfudaPattern.HasFlag(Pattern.Hagi2) && tokutenfudaPattern.HasFlag(Pattern.HagiAndInoshishi) && tokutenfudaPattern.HasFlag(Pattern.HagiAndTanzakuAka))
+                score += 50;
+            if (tokutenfudaPattern.HasFlag(Pattern.Kiku1) && tokutenfudaPattern.HasFlag(Pattern.Kiku2) && tokutenfudaPattern.HasFlag(Pattern.KikuAndOchoko) && tokutenfudaPattern.HasFlag(Pattern.KikuAndTanzakuAo))
+                score += 50;
+            if (tokutenfudaPattern.HasFlag(Pattern.Kiri1) && tokutenfudaPattern.HasFlag(Pattern.Kiri2) && tokutenfudaPattern.HasFlag(Pattern.KiriAndHouou) && tokutenfudaPattern.HasFlag(Pattern.KiriAndYellow))
+                score += 50;
+            if (tokutenfudaPattern.HasFlag(Pattern.Matsu1) && tokutenfudaPattern.HasFlag(Pattern.Matsu2) && tokutenfudaPattern.HasFlag(Pattern.MatsuAndTanzakuAka) && tokutenfudaPattern.HasFlag(Pattern.MatsuAndTsuru))
+                score += 50; ;
+            if (tokutenfudaPattern.HasFlag(Pattern.Momiji1) && tokutenfudaPattern.HasFlag(Pattern.Momiji2) && tokutenfudaPattern.HasFlag(Pattern.MomijiAndShika) && tokutenfudaPattern.HasFlag(Pattern.MomijiAndTanzakuAo))
+                score += 50;
+            if (tokutenfudaPattern.HasFlag(Pattern.Sakura1) && tokutenfudaPattern.HasFlag(Pattern.Sakura2) && tokutenfudaPattern.HasFlag(Pattern.SakuraAndMaku) && tokutenfudaPattern.HasFlag(Pattern.SakuraAndTanzakuAka))
+                score += 50;
+            if (tokutenfudaPattern.HasFlag(Pattern.Susuki1) && tokutenfudaPattern.HasFlag(Pattern.Susuki2) && tokutenfudaPattern.HasFlag(Pattern.SusukiAndGan) && tokutenfudaPattern.HasFlag(Pattern.SusukiAndTsuki))
+                score += 50;
+            if (tokutenfudaPattern.HasFlag(Pattern.Ume1) && tokutenfudaPattern.HasFlag(Pattern.Ume2) && tokutenfudaPattern.HasFlag(Pattern.UmeAndTanzakuAka) && tokutenfudaPattern.HasFlag(Pattern.UmeAndUguisu))
+                score += 50;
+            if (tokutenfudaPattern.HasFlag(Pattern.FujiAndTanzakuAka) && tokutenfudaPattern.HasFlag(Pattern.AyameAndTanzakuAka) && tokutenfudaPattern.HasFlag(Pattern.HagiAndTanzakuAka))
+                score += 100;
+            if (tokutenfudaPattern.HasFlag(Pattern.BotanAndTanzakuAo) && tokutenfudaPattern.HasFlag(Pattern.KikuAndTanzakuAo) && tokutenfudaPattern.HasFlag(Pattern.MomijiAndTanzakuAo))
+                score += 100;
+            if (tokutenfudaPattern.HasFlag(Pattern.UmeAndTanzakuAka) && tokutenfudaPattern.HasFlag(Pattern.MatsuAndTanzakuAka) && tokutenfudaPattern.HasFlag(Pattern.SakuraAndTanzakuAka))
+                score += 150;
+            if (tokutenfudaPattern.HasFlag(Pattern.UmeAndUguisu) && tokutenfudaPattern.HasFlag(Pattern.MatsuAndTsuru) && tokutenfudaPattern.HasFlag(Pattern.SakuraAndMaku))
+                score += 100;
+            if (tokutenfudaPattern.HasFlag(Pattern.SusukiAndTsuki) && tokutenfudaPattern.HasFlag(Pattern.KikuAndOchoko))
+                score += 100;
+            if (tokutenfudaPattern.HasFlag(Pattern.SakuraAndMaku) && tokutenfudaPattern.HasFlag(Pattern.KikuAndOchoko))
+                score += 100;
+            if (tokutenfudaPattern.HasFlag(Pattern.SusukiAndTsuki) && tokutenfudaPattern.HasFlag(Pattern.SakuraAndMaku) && tokutenfudaPattern.HasFlag(Pattern.KikuAndOchoko))
+                score += 300;
+            if (tokutenfudaPattern.HasFlag(Pattern.MatsuAndTsuru) && tokutenfudaPattern.HasFlag(Pattern.KiriAndHouou) && tokutenfudaPattern.HasFlag(Pattern.SusukiAndTsuki))
+                score += 150;
+            if (tokutenfudaPattern.HasFlag(Pattern.HagiAndInoshishi) && tokutenfudaPattern.HasFlag(Pattern.MomijiAndShika) && tokutenfudaPattern.HasFlag(Pattern.BotanAndChou))
+                score += 300;
+            if (tokutenfudaPattern.HasFlag(Pattern.MatsuAndTsuru) && tokutenfudaPattern.HasFlag(Pattern.KiriAndHouou) && tokutenfudaPattern.HasFlag(Pattern.SusukiAndTsuki) && tokutenfudaPattern.HasFlag(Pattern.SakuraAndMaku))
+                score += 600;
+            Pattern nanatan = Pattern.FujiAndTanzakuAka | Pattern.AyameAndTanzakuAka | Pattern.HagiAndTanzakuAka | Pattern.UmeAndTanzakuAka | Pattern.MatsuAndTanzakuAka | Pattern.SakuraAndTanzakuAka | Pattern.BotanAndTanzakuAo | Pattern.KikuAndTanzakuAo | Pattern.MomijiAndTanzakuAo;
+            if (BitCnt1((long)(tokutenfudaPattern & nanatan)) >= 7)
+                score += 600;
+
+            player.Score = score;
+        }
+        int BitCnt1(long val)
+        {
+            int cnt = 0;
+            while (val != 0)
+            {
+                if ((val & 1) != 0)
+                    cnt++;
+                val >>= 1;
+            }
+            return cnt
+        }
         public void Play()
         {
             Player currentPlayer = players.Single(player => player.PlayerState == State.Running);
-            int current = players.IndexOf(currentPlayer);
+
             while (isNextPlayer())
             {
                 if (currentPlayer.PlayerHandle == Handle.Auto)
@@ -621,7 +706,8 @@ namespace RoppyakkenApplication
                     Card popCard = yamafuda.CardPop();
                     currentPlayer.AddCard(popCard);
                     currentPlayer.ThrowToAuto(bafuda, popCard);
-
+                    CalculateScore(currentPlayer);
+                    Fill();
                     // 次の手番のプレイヤーを呼び出す。
                     currentPlayer.PlayerState = State.Waiting;
                     if (isNextPlayer())
@@ -634,10 +720,13 @@ namespace RoppyakkenApplication
                 {
                     while (true)
                     {
+                        Fill();
+                        Console.Write("どの札を出しますか？\n");
                         ConsoleKey consoleKey = Console.ReadKey(true).Key;
                         switch (consoleKey)
                         {
                             case ConsoleKey.D0:
+                                if (currentPlayer.Cards.Count < 1) break;
                                 Console.Write("{0} を切りますか？ Enter or N\n", currentPlayer.GetCardPattern(0));
                                 consoleKey = Console.ReadKey(true).Key;
                                 if (consoleKey == ConsoleKey.Enter)
@@ -648,7 +737,8 @@ namespace RoppyakkenApplication
                                     Card popCard = yamafuda.CardPop();
                                     currentPlayer.AddCard(popCard);
                                     currentPlayer.ThrowToManual(bafuda, popCard);
-
+                                    CalculateScore(currentPlayer);
+                                    Fill();
                                     // 次の手番のプレイヤーを呼び出す。
                                     currentPlayer.PlayerState = State.Waiting;
                                     if (isNextPlayer())
@@ -665,6 +755,7 @@ namespace RoppyakkenApplication
                                 else
                                     throw new Exception("異常な入力が読み込まれました。\n");
                             case ConsoleKey.D1:
+                                if (currentPlayer.Cards.Count < 2) break;
                                 Console.Write("{0} を切りますか？ Enter or N\n", currentPlayer.GetCardPattern(1));
                                 consoleKey = Console.ReadKey(true).Key;
                                 if (consoleKey == ConsoleKey.Enter)
@@ -675,7 +766,8 @@ namespace RoppyakkenApplication
                                     Card popCard = yamafuda.CardPop();
                                     currentPlayer.AddCard(popCard);
                                     currentPlayer.ThrowToManual(bafuda, popCard);
-
+                                    CalculateScore(currentPlayer);
+                                    Fill();
                                     // 次の手番のプレイヤーを呼び出す。
                                     currentPlayer.PlayerState = State.Waiting;
                                     if (isNextPlayer())
@@ -692,6 +784,7 @@ namespace RoppyakkenApplication
                                 else
                                     throw new Exception("異常な入力が読み込まれました。\n");
                             case ConsoleKey.D2:
+                                if (currentPlayer.Cards.Count < 3) break;
                                 Console.Write("{0} を切りますか？ Enter or N\n", currentPlayer.GetCardPattern(2));
                                 consoleKey = Console.ReadKey(true).Key;
                                 if (consoleKey == ConsoleKey.Enter)
@@ -702,7 +795,8 @@ namespace RoppyakkenApplication
                                     Card popCard = yamafuda.CardPop();
                                     currentPlayer.AddCard(popCard);
                                     currentPlayer.ThrowToManual(bafuda, popCard);
-
+                                    CalculateScore(currentPlayer);
+                                    Fill();
                                     // 次の手番のプレイヤーを呼び出す。
                                     currentPlayer.PlayerState = State.Waiting;
                                     if (isNextPlayer())
@@ -719,6 +813,7 @@ namespace RoppyakkenApplication
                                 else
                                     throw new Exception("異常な入力が読み込まれました。\n");
                             case ConsoleKey.D3:
+                                if (currentPlayer.Cards.Count < 4) break;
                                 Console.Write("{0} を切りますか？ Enter or N\n", currentPlayer.GetCardPattern(3));
                                 consoleKey = Console.ReadKey(true).Key;
                                 if (consoleKey == ConsoleKey.Enter)
@@ -729,7 +824,8 @@ namespace RoppyakkenApplication
                                     Card popCard = yamafuda.CardPop();
                                     currentPlayer.AddCard(popCard);
                                     currentPlayer.ThrowToManual(bafuda, popCard);
-
+                                    CalculateScore(currentPlayer);
+                                    Fill();
                                     // 次の手番のプレイヤーを呼び出す。
                                     currentPlayer.PlayerState = State.Waiting;
                                     if (isNextPlayer())
@@ -746,6 +842,7 @@ namespace RoppyakkenApplication
                                 else
                                     throw new Exception("異常な入力が読み込まれました。\n");
                             case ConsoleKey.D4:
+                                if (currentPlayer.Cards.Count < 5) break;
                                 Console.Write("{0} を切りますか？ Enter or N\n", currentPlayer.GetCardPattern(4));
                                 consoleKey = Console.ReadKey(true).Key;
                                 if (consoleKey == ConsoleKey.Enter)
@@ -756,7 +853,8 @@ namespace RoppyakkenApplication
                                     Card popCard = yamafuda.CardPop();
                                     currentPlayer.AddCard(popCard);
                                     currentPlayer.ThrowToManual(bafuda, popCard);
-
+                                    CalculateScore(currentPlayer);
+                                    Fill();
                                     // 次の手番のプレイヤーを呼び出す。
                                     currentPlayer.PlayerState = State.Waiting;
                                     if (isNextPlayer())
@@ -773,6 +871,7 @@ namespace RoppyakkenApplication
                                 else
                                     throw new Exception("異常な入力が読み込まれました。\n");
                             case ConsoleKey.D5:
+                                if (currentPlayer.Cards.Count < 6) break;
                                 Console.Write("{0} を切りますか？ Enter or N\n", currentPlayer.GetCardPattern(5));
                                 consoleKey = Console.ReadKey(true).Key;
                                 if (consoleKey == ConsoleKey.Enter)
@@ -783,7 +882,8 @@ namespace RoppyakkenApplication
                                     Card popCard = yamafuda.CardPop();
                                     currentPlayer.AddCard(popCard);
                                     currentPlayer.ThrowToManual(bafuda, popCard);
-
+                                    CalculateScore(currentPlayer);
+                                    Fill();
                                     // 次の手番のプレイヤーを呼び出す。
                                     currentPlayer.PlayerState = State.Waiting;
                                     if (isNextPlayer())
@@ -800,6 +900,7 @@ namespace RoppyakkenApplication
                                 else
                                     throw new Exception("異常な入力が読み込まれました。\n");
                             case ConsoleKey.D6:
+                                if (currentPlayer.Cards.Count < 7) break;
                                 Console.Write("{0} を切りますか？ Enter or N\n", currentPlayer.GetCardPattern(6));
                                 consoleKey = Console.ReadKey(true).Key;
                                 if (consoleKey == ConsoleKey.Enter)
@@ -810,7 +911,8 @@ namespace RoppyakkenApplication
                                     Card popCard = yamafuda.CardPop();
                                     currentPlayer.AddCard(popCard);
                                     currentPlayer.ThrowToManual(bafuda, popCard);
-
+                                    CalculateScore(currentPlayer);
+                                    Fill();
                                     // 次の手番のプレイヤーを呼び出す。
                                     currentPlayer.PlayerState = State.Waiting;
                                     if (isNextPlayer())
@@ -827,6 +929,7 @@ namespace RoppyakkenApplication
                                 else
                                     throw new Exception("異常な入力が読み込まれました。\n");
                             case ConsoleKey.D7:
+                                if (currentPlayer.Cards.Count < 8) break;
                                 Console.Write("{0} を切りますか？ Enter or N\n", currentPlayer.GetCardPattern(7));
                                 consoleKey = Console.ReadKey(true).Key;
                                 if (consoleKey == ConsoleKey.Enter)
@@ -837,7 +940,8 @@ namespace RoppyakkenApplication
                                     Card popCard = yamafuda.CardPop();
                                     currentPlayer.AddCard(popCard);
                                     currentPlayer.ThrowToManual(bafuda, popCard);
-
+                                    CalculateScore(currentPlayer);
+                                    Fill();
                                     // 次の手番のプレイヤーを呼び出す。
                                     currentPlayer.PlayerState = State.Waiting;
                                     if (isNextPlayer())

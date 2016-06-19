@@ -295,18 +295,32 @@ namespace RoppyakkenApplication
                 int matchCount = bafuda.MatchManthCount(playerCard);
                 if (1 > matchCount)
                 {
-                    Console.Write("どの場札を切りますか？\n");
-                    ConsoleKey consoleKey = Console.ReadKey(true).Key;
-                    int index;
-                    if (!Int32.TryParse(consoleKey.ToString(), out index)) throw new Exception();
-                    Console.Write("{0} を切りました。", bafuda.Cards[index].CardPattern);
+                    while (true)
+                    {
+                        Console.Write("どの場札を切りますか？ Enter or N\n");
+                        ConsoleKey consoleKey = Console.ReadKey(true).Key;
+                        int index;
+                        if (!Int32.TryParse(consoleKey.ToString(), out index)) throw new Exception();
+                        Console.Write("{0} を切りますか？ Enter or N\n", bafuda.Cards[index].CardPattern);
+                        consoleKey = Console.ReadKey(true).Key;
+                        if (consoleKey == ConsoleKey.Enter)
+                        {
+                            Console.Write("{0} を切りました。\n", bafuda.Cards[index].CardPattern);
+                            List<Card> matchedCards = bafuda.MatchedCards(playerCard);
 
-                    List<Card> matchedCards = bafuda.MatchedCards(playerCard);
+                            // require
+                            if (!matchedCards.Any(card => matchedCards.IndexOf(card) == index)) throw new Exception();
 
-                    // require
-                    if (!matchedCards.Any(card => matchedCards.IndexOf(card) == index)) throw new Exception();
-
-                    ThrowTo(bafuda, playerCard, index);
+                            ThrowTo(bafuda, playerCard, index);
+                            break;
+                        }
+                        if (consoleKey == ConsoleKey.N)
+                        {
+                            continue;
+                        }
+                        else
+                            throw new Exception("異常な入力が読み込まれました。\n");
+                    }
                 }
                 else if (1 == matchCount)
                 {
@@ -624,7 +638,7 @@ namespace RoppyakkenApplication
                         switch (consoleKey)
                         {
                             case ConsoleKey.D0:
-                                Console.Write("{0} を切りますか？\n", currentPlayer.GetCardPattern(0));
+                                Console.Write("{0} を切りますか？ Enter or N\n", currentPlayer.GetCardPattern(0));
                                 consoleKey = Console.ReadKey(true).Key;
                                 if (consoleKey == ConsoleKey.Enter)
                                 {
@@ -651,7 +665,7 @@ namespace RoppyakkenApplication
                                 else
                                     throw new Exception("異常な入力が読み込まれました。\n");
                             case ConsoleKey.D1:
-                                Console.Write("{0} を切りますか？\n", currentPlayer.GetCardPattern(1));
+                                Console.Write("{0} を切りますか？ Enter or N\n", currentPlayer.GetCardPattern(1));
                                 consoleKey = Console.ReadKey(true).Key;
                                 if (consoleKey == ConsoleKey.Enter)
                                 {
@@ -678,7 +692,7 @@ namespace RoppyakkenApplication
                                 else
                                     throw new Exception("異常な入力が読み込まれました。\n");
                             case ConsoleKey.D2:
-                                Console.Write("{0} を切りますか？\n", currentPlayer.GetCardPattern(2));
+                                Console.Write("{0} を切りますか？ Enter or N\n", currentPlayer.GetCardPattern(2));
                                 consoleKey = Console.ReadKey(true).Key;
                                 if (consoleKey == ConsoleKey.Enter)
                                 {
@@ -705,7 +719,7 @@ namespace RoppyakkenApplication
                                 else
                                     throw new Exception("異常な入力が読み込まれました。\n");
                             case ConsoleKey.D3:
-                                Console.Write("{0} を切りますか？\n", currentPlayer.GetCardPattern(3));
+                                Console.Write("{0} を切りますか？ Enter or N\n", currentPlayer.GetCardPattern(3));
                                 consoleKey = Console.ReadKey(true).Key;
                                 if (consoleKey == ConsoleKey.Enter)
                                 {
@@ -732,7 +746,7 @@ namespace RoppyakkenApplication
                                 else
                                     throw new Exception("異常な入力が読み込まれました。\n");
                             case ConsoleKey.D4:
-                                Console.Write("{0} を切りますか？\n", currentPlayer.GetCardPattern(4));
+                                Console.Write("{0} を切りますか？ Enter or N\n", currentPlayer.GetCardPattern(4));
                                 consoleKey = Console.ReadKey(true).Key;
                                 if (consoleKey == ConsoleKey.Enter)
                                 {
@@ -759,7 +773,7 @@ namespace RoppyakkenApplication
                                 else
                                     throw new Exception("異常な入力が読み込まれました。\n");
                             case ConsoleKey.D5:
-                                Console.Write("{0} を切りますか？\n", currentPlayer.GetCardPattern(5));
+                                Console.Write("{0} を切りますか？ Enter or N\n", currentPlayer.GetCardPattern(5));
                                 consoleKey = Console.ReadKey(true).Key;
                                 if (consoleKey == ConsoleKey.Enter)
                                 {
@@ -786,7 +800,7 @@ namespace RoppyakkenApplication
                                 else
                                     throw new Exception("異常な入力が読み込まれました。\n");
                             case ConsoleKey.D6:
-                                Console.Write("{0} を切りますか？\n", currentPlayer.GetCardPattern(6));
+                                Console.Write("{0} を切りますか？ Enter or N\n", currentPlayer.GetCardPattern(6));
                                 consoleKey = Console.ReadKey(true).Key;
                                 if (consoleKey == ConsoleKey.Enter)
                                 {
@@ -813,7 +827,7 @@ namespace RoppyakkenApplication
                                 else
                                     throw new Exception("異常な入力が読み込まれました。\n");
                             case ConsoleKey.D7:
-                                Console.Write("{0} を切りますか？\n", currentPlayer.GetCardPattern(7));
+                                Console.Write("{0} を切りますか？ Enter or N\n", currentPlayer.GetCardPattern(7));
                                 consoleKey = Console.ReadKey(true).Key;
                                 if (consoleKey == ConsoleKey.Enter)
                                 {

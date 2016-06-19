@@ -109,6 +109,10 @@ namespace RoppyakkenApplication
             // ビットを落とす。
             hand &= ~card.CardPattern;
         }
+        public Pattern GetCardPattern(int index)
+        {
+            return cards[index].CardPattern;
+        }
         /// <summary>
         /// Playerクラスの開始状態の構築。呼び出し回数はプレイ人数によって決定する。
         /// </summary>
@@ -177,6 +181,7 @@ namespace RoppyakkenApplication
         public int Score { get; set; }
         public State PlayerState { get; set; }
         public Handle PlayerHandle { get; set; }
+        /*
         /// <summary>
         /// haguriCardのManth属性が、BafudaクラスのCardsのManth属性と一致しない場合、haguriCardをBafudaのCardsに追加する。
         /// </summary>
@@ -226,67 +231,102 @@ namespace RoppyakkenApplication
             AddKirifuda(haguriCard);
             AddKirifuda(getCard);
         }
+        */
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="bafuda"></param>
+        /// <param name="playerCard"></param>
+        /// <param name="index">場札に対するインデックス</param>
+        public void ThrowTo(Bafuda bafuda, Card playerCard, int index)
+        {
+            // 例外処理はbafudaクラス内に閉じ込める。
+            bafuda.RemoveCard(bafuda.Cards[index]);
+            RemoveCard(cards[index]);
+
+            // 場札に一致する札が存在するため一致する札を一枚kirifudaに加える。
+            bafuda.ThrowToMatch(this, cards[index], index);
+        }
         /// <summary>
         /// 選択肢は、異常な入力に対してExceptionを発生させる事で閉じている必要がある。
         /// </summary>
         /// <param name="bafuda"></param>
         /// <param name="card"></param>
-        public void Throw(Bafuda bafuda, Card card)
+        public void ThrowToAuto(Bafuda bafuda, Card playerCard)
         {
-            if (PlayerHandle == Handle.Auto)
+            if (bafuda.isMatchManth(playerCard))
             {
-                if (bafuda.isMatchManth(cards[0]))
+                int matchCount = bafuda.MatchManthCount(playerCard);
+                if (1 > matchCount)
                 {
-                    int matchCount = bafuda.MatchManthCount(card);
-                    if (1 > matchCount)
-                    {
+                    List<Card> matchedCards = bafuda.MatchedCards(playerCard);
+                    ThrowTo(bafuda, playerCard, matchedCards.IndexOf(matchedCards[0]));
+                }
+                else if (1 == matchCount)
+                {
+                    // 例外処理はbafudaクラス内に閉じ込める。
+                    bafuda.RemoveCard(bafuda.MatchedCard(playerCard));
+                    RemoveCard(playerCard);
 
-                    }
-                    else if(1 == matchCount)
-                    {
-                        // 例外処理はbafudaクラス内に閉じ込める。
-                        bafuda.AddCard(cards[0]);
-                        RemoveCard(cards[0]);
-
-                        // 場札に一致する札が存在するため一致する札を一枚kirifudaに加える。
-                        bafuda.ThrowToMatch(this, cards[0]);
-                    }
-                    else
-                    {
-                        throw new ArgumentOutOfRangeException();
-                    }
+                    // 場札に一致する札が存在するため一致する札を一枚kirifudaに加える。
+                    bafuda.ThrowToMatch(this, playerCard);
                 }
                 else
                 {
-                    // 例外処理はbafudaクラス内に閉じ込める。
-                    bafuda.AddCard(cards[0]);
-                    RemoveCard(cards[0]);
+                    throw new ArgumentOutOfRangeException();
                 }
             }
-            else if (PlayerHandle == Handle.Manual)
+            else
             {
-                while (true)
+                // 例外処理はbafudaクラス内に閉じ込める。
+                bafuda.AddCard(playerCard);
+                RemoveCard(playerCard);
+            }
+        }
+        /// <summary>
+        /// 選択肢は、異常な入力に対してExceptionを発生させる事で閉じている必要がある。
+        /// </summary>
+        /// <param name="bafuda"></param>
+        /// <param name="card"></param>
+        public void ThrowToManual(Bafuda bafuda, Card playerCard)
+        {
+            if (bafuda.isMatchManth(playerCard))
+            {
+                int matchCount = bafuda.MatchManthCount(playerCard);
+                if (1 > matchCount)
                 {
+                    Console.Write("どの場札を切りますか？\n");
                     ConsoleKey consoleKey = Console.ReadKey(true).Key;
-                    switch (consoleKey)
-                    {
-                        case ConsoleKey.D0:
-                            Console.Write("{0} を切りますか？\n", cards[0].CardPattern);
-                            consoleKey = Console.ReadKey(true).Key;
-                            if (consoleKey == ConsoleKey.Enter)
-                            {
-                                Console.Write("{0} を切りました。\n", cards[0].CardPattern);
-                                
-                                break;
-                            }
-                            else if (consoleKey == ConsoleKey.N)
-                            {
-                                break;
-                            }
-                            else
-                                throw new Exception("異常な入力が読み込まれました。\n");
-                    }
+                    int index;
+                    if (!Int32.TryParse(consoleKey.ToString(), out index)) throw new Exception();
+                    Console.Write("{0} を切りました。", bafuda.Cards[index].CardPattern);
+
+                    List<Card> matchedCards = bafuda.MatchedCards(playerCard);
+
+                    // require
+                    if (!matchedCards.Any(card => matchedCards.IndexOf(card) == index)) throw new Exception();
+
+                    ThrowTo(bafuda, playerCard, index);
                 }
+                else if (1 == matchCount)
+                {
+                    // 例外処理はbafudaクラス内に閉じ込める。
+                    bafuda.RemoveCard(bafuda.MatchedCard(playerCard));
+                    RemoveCard(playerCard);
+
+                    // 場札に一致する札が存在するため一致する札を一枚kirifudaに加える。
+                    bafuda.ThrowToMatch(this, playerCard);
+                }
+                else
+                {
+                    throw new ArgumentOutOfRangeException();
+                }
+            }
+            else
+            {
+                // 例外処理はbafudaクラス内に閉じ込める。
+                bafuda.AddCard(playerCard);
+                RemoveCard(playerCard);
             }
         }
     }
@@ -455,10 +495,10 @@ namespace RoppyakkenApplication
         {
             // require
             if (!isMatchManth(playerCard)) throw new Exception("異常な組み合わせです。select card was not match manth bafuda");
-            if (!isMatchManth(playerCard, MatchingCard(playerCard))) throw new Exception("異常な組み合わせです。select card was not match manth bafuda");
+            if (!isMatchManth(playerCard, MatchedCard(playerCard))) throw new Exception("異常な組み合わせです。select card was not match manth bafuda");
 
             player.AddKirifuda(playerCard);
-            player.AddKirifuda(MatchingCard(playerCard));
+            player.AddKirifuda(MatchedCard(playerCard));
         }
         /// <summary>
         /// 場札に対し、引数Cardで、isMatchManthがtrueのかつ、MacthManthCountが複数の場合の操作。
@@ -469,7 +509,7 @@ namespace RoppyakkenApplication
         public void ThrowToMatch(Player player, Card playerCard, int count)
         {
             // require
-            if (!isMatchManth(playerCard, MatchingCard(playerCard))) throw new Exception("異常な組み合わせです。select card was not match manth bafuda");
+            if (!isMatchManth(playerCard, MatchedCard(playerCard))) throw new Exception("異常な組み合わせです。select card was not match manth bafuda");
             if (!isMatchManth(playerCard, cards[count])) throw new Exception("異常な組み合わせです。select card was not match manth bafuda");
 
             // cardとcount番目の場札の月が一致する。
@@ -481,9 +521,18 @@ namespace RoppyakkenApplication
         /// </summary>
         /// <param name="playerCard"></param>
         /// <returns></returns>
-        public Card MatchingCard(Card playerCard)
+        public Card MatchedCard(Card playerCard)
         {
             return cards.Where(bafudaCard => bafudaCard.Manth == playerCard.Manth).Single();
+        }
+        /// <summary>
+        /// 一致するカードを返す。
+        /// </summary>
+        /// <param name="playerCard"></param>
+        /// <returns></returns>
+        public List<Card> MatchedCards(Card playerCard)
+        {
+            return cards.Where(bafudaCard => bafudaCard.Manth == playerCard.Manth).ToList();
         }
     }
     class Manager
@@ -531,17 +580,267 @@ namespace RoppyakkenApplication
                 players[2].PlayerHandle = Handle.Auto;
             }
         }
+        public Player GetNextPlayer(Player currentPlayer)
+        {
+            int index = players.IndexOf(currentPlayer);
+            if (index == players.Count - 1)
+                return players[0];
+            else
+                return players[++index];
+        }
+        public bool isNextPlayer()
+        {
+            return players.Any(player => player.Cards.Count > 0);
+        }
         public void Play()
         {
             Player currentPlayer = players.Single(player => player.PlayerState == State.Running);
             int current = players.IndexOf(currentPlayer);
-            while (true)
+            while (isNextPlayer())
             {
-                if (current == players.Count)
-                    current = 0;
-                if(currentPlayer.PlayerHandle == Handle.Auto)
+                if (currentPlayer.PlayerHandle == Handle.Auto)
                 {
+                    // 手札から場札に一枚出す。
+                    currentPlayer.ThrowToAuto(bafuda, currentPlayer.Cards[0]);
+                    
+                    // 山札から場札に一枚出す。
+                    Card popCard = yamafuda.CardPop();
+                    currentPlayer.AddCard(popCard);
+                    currentPlayer.ThrowToAuto(bafuda, popCard);
 
+                    // 次の手番のプレイヤーを呼び出す。
+                    currentPlayer.PlayerState = State.Waiting;
+                    if (isNextPlayer())
+                    {
+                        currentPlayer = GetNextPlayer(currentPlayer);
+                        currentPlayer.PlayerState = State.Running;
+                    }
+                }
+                else if (currentPlayer.PlayerHandle == Handle.Manual)
+                {
+                    while (true)
+                    {
+                        ConsoleKey consoleKey = Console.ReadKey(true).Key;
+                        switch (consoleKey)
+                        {
+                            case ConsoleKey.D0:
+                                Console.Write("{0} を切りますか？\n", currentPlayer.GetCardPattern(0));
+                                consoleKey = Console.ReadKey(true).Key;
+                                if (consoleKey == ConsoleKey.Enter)
+                                {
+                                    Console.Write("{0} を切りました。\n", currentPlayer.GetCardPattern(0));
+                                    currentPlayer.ThrowToManual(bafuda, currentPlayer.Cards[0]);
+                                    // 山札から場札に一枚出す。
+                                    Card popCard = yamafuda.CardPop();
+                                    currentPlayer.AddCard(popCard);
+                                    currentPlayer.ThrowToManual(bafuda, popCard);
+
+                                    // 次の手番のプレイヤーを呼び出す。
+                                    currentPlayer.PlayerState = State.Waiting;
+                                    if (isNextPlayer())
+                                    {
+                                        currentPlayer = GetNextPlayer(currentPlayer);
+                                        currentPlayer.PlayerState = State.Running;
+                                    }
+                                    break;
+                                }
+                                else if (consoleKey == ConsoleKey.N)
+                                {
+                                    break;
+                                }
+                                else
+                                    throw new Exception("異常な入力が読み込まれました。\n");
+                            case ConsoleKey.D1:
+                                Console.Write("{0} を切りますか？\n", currentPlayer.GetCardPattern(1));
+                                consoleKey = Console.ReadKey(true).Key;
+                                if (consoleKey == ConsoleKey.Enter)
+                                {
+                                    Console.Write("{0} を切りました。\n", currentPlayer.GetCardPattern(1));
+                                    currentPlayer.ThrowToManual(bafuda, currentPlayer.Cards[1]);
+                                    // 山札から場札に一枚出す。
+                                    Card popCard = yamafuda.CardPop();
+                                    currentPlayer.AddCard(popCard);
+                                    currentPlayer.ThrowToManual(bafuda, popCard);
+
+                                    // 次の手番のプレイヤーを呼び出す。
+                                    currentPlayer.PlayerState = State.Waiting;
+                                    if (isNextPlayer())
+                                    {
+                                        currentPlayer = GetNextPlayer(currentPlayer);
+                                        currentPlayer.PlayerState = State.Running;
+                                    }
+                                    break;
+                                }
+                                else if (consoleKey == ConsoleKey.N)
+                                {
+                                    break;
+                                }
+                                else
+                                    throw new Exception("異常な入力が読み込まれました。\n");
+                            case ConsoleKey.D2:
+                                Console.Write("{0} を切りますか？\n", currentPlayer.GetCardPattern(2));
+                                consoleKey = Console.ReadKey(true).Key;
+                                if (consoleKey == ConsoleKey.Enter)
+                                {
+                                    Console.Write("{0} を切りました。\n", currentPlayer.GetCardPattern(2));
+                                    currentPlayer.ThrowToManual(bafuda, currentPlayer.Cards[2]);
+                                    // 山札から場札に一枚出す。
+                                    Card popCard = yamafuda.CardPop();
+                                    currentPlayer.AddCard(popCard);
+                                    currentPlayer.ThrowToManual(bafuda, popCard);
+
+                                    // 次の手番のプレイヤーを呼び出す。
+                                    currentPlayer.PlayerState = State.Waiting;
+                                    if (isNextPlayer())
+                                    {
+                                        currentPlayer = GetNextPlayer(currentPlayer);
+                                        currentPlayer.PlayerState = State.Running;
+                                    }
+                                    break;
+                                }
+                                else if (consoleKey == ConsoleKey.N)
+                                {
+                                    break;
+                                }
+                                else
+                                    throw new Exception("異常な入力が読み込まれました。\n");
+                            case ConsoleKey.D3:
+                                Console.Write("{0} を切りますか？\n", currentPlayer.GetCardPattern(3));
+                                consoleKey = Console.ReadKey(true).Key;
+                                if (consoleKey == ConsoleKey.Enter)
+                                {
+                                    Console.Write("{0} を切りました。\n", currentPlayer.GetCardPattern(3));
+                                    currentPlayer.ThrowToManual(bafuda, currentPlayer.Cards[3]);
+                                    // 山札から場札に一枚出す。
+                                    Card popCard = yamafuda.CardPop();
+                                    currentPlayer.AddCard(popCard);
+                                    currentPlayer.ThrowToManual(bafuda, popCard);
+
+                                    // 次の手番のプレイヤーを呼び出す。
+                                    currentPlayer.PlayerState = State.Waiting;
+                                    if (isNextPlayer())
+                                    {
+                                        currentPlayer = GetNextPlayer(currentPlayer);
+                                        currentPlayer.PlayerState = State.Running;
+                                    }
+                                    break;
+                                }
+                                else if (consoleKey == ConsoleKey.N)
+                                {
+                                    break;
+                                }
+                                else
+                                    throw new Exception("異常な入力が読み込まれました。\n");
+                            case ConsoleKey.D4:
+                                Console.Write("{0} を切りますか？\n", currentPlayer.GetCardPattern(4));
+                                consoleKey = Console.ReadKey(true).Key;
+                                if (consoleKey == ConsoleKey.Enter)
+                                {
+                                    Console.Write("{0} を切りました。\n", currentPlayer.GetCardPattern(4));
+                                    currentPlayer.ThrowToManual(bafuda, currentPlayer.Cards[4]);
+                                    // 山札から場札に一枚出す。
+                                    Card popCard = yamafuda.CardPop();
+                                    currentPlayer.AddCard(popCard);
+                                    currentPlayer.ThrowToManual(bafuda, popCard);
+
+                                    // 次の手番のプレイヤーを呼び出す。
+                                    currentPlayer.PlayerState = State.Waiting;
+                                    if (isNextPlayer())
+                                    {
+                                        currentPlayer = GetNextPlayer(currentPlayer);
+                                        currentPlayer.PlayerState = State.Running;
+                                    }
+                                    break;
+                                }
+                                else if (consoleKey == ConsoleKey.N)
+                                {
+                                    break;
+                                }
+                                else
+                                    throw new Exception("異常な入力が読み込まれました。\n");
+                            case ConsoleKey.D5:
+                                Console.Write("{0} を切りますか？\n", currentPlayer.GetCardPattern(5));
+                                consoleKey = Console.ReadKey(true).Key;
+                                if (consoleKey == ConsoleKey.Enter)
+                                {
+                                    Console.Write("{0} を切りました。\n", currentPlayer.GetCardPattern(5));
+                                    currentPlayer.ThrowToManual(bafuda, currentPlayer.Cards[5]);
+                                    // 山札から場札に一枚出す。
+                                    Card popCard = yamafuda.CardPop();
+                                    currentPlayer.AddCard(popCard);
+                                    currentPlayer.ThrowToManual(bafuda, popCard);
+
+                                    // 次の手番のプレイヤーを呼び出す。
+                                    currentPlayer.PlayerState = State.Waiting;
+                                    if (isNextPlayer())
+                                    {
+                                        currentPlayer = GetNextPlayer(currentPlayer);
+                                        currentPlayer.PlayerState = State.Running;
+                                    }
+                                    break;
+                                }
+                                else if (consoleKey == ConsoleKey.N)
+                                {
+                                    break;
+                                }
+                                else
+                                    throw new Exception("異常な入力が読み込まれました。\n");
+                            case ConsoleKey.D6:
+                                Console.Write("{0} を切りますか？\n", currentPlayer.GetCardPattern(6));
+                                consoleKey = Console.ReadKey(true).Key;
+                                if (consoleKey == ConsoleKey.Enter)
+                                {
+                                    Console.Write("{0} を切りました。\n", currentPlayer.GetCardPattern(6));
+                                    currentPlayer.ThrowToManual(bafuda, currentPlayer.Cards[6]);
+                                    // 山札から場札に一枚出す。
+                                    Card popCard = yamafuda.CardPop();
+                                    currentPlayer.AddCard(popCard);
+                                    currentPlayer.ThrowToManual(bafuda, popCard);
+
+                                    // 次の手番のプレイヤーを呼び出す。
+                                    currentPlayer.PlayerState = State.Waiting;
+                                    if (isNextPlayer())
+                                    {
+                                        currentPlayer = GetNextPlayer(currentPlayer);
+                                        currentPlayer.PlayerState = State.Running;
+                                    }
+                                    break;
+                                }
+                                else if (consoleKey == ConsoleKey.N)
+                                {
+                                    break;
+                                }
+                                else
+                                    throw new Exception("異常な入力が読み込まれました。\n");
+                            case ConsoleKey.D7:
+                                Console.Write("{0} を切りますか？\n", currentPlayer.GetCardPattern(7));
+                                consoleKey = Console.ReadKey(true).Key;
+                                if (consoleKey == ConsoleKey.Enter)
+                                {
+                                    Console.Write("{0} を切りました。\n", currentPlayer.GetCardPattern(7));
+                                    currentPlayer.ThrowToManual(bafuda, currentPlayer.Cards[7]);
+                                    // 山札から場札に一枚出す。
+                                    Card popCard = yamafuda.CardPop();
+                                    currentPlayer.AddCard(popCard);
+                                    currentPlayer.ThrowToManual(bafuda, popCard);
+
+                                    // 次の手番のプレイヤーを呼び出す。
+                                    currentPlayer.PlayerState = State.Waiting;
+                                    if (isNextPlayer())
+                                    {
+                                        currentPlayer = GetNextPlayer(currentPlayer);
+                                        currentPlayer.PlayerState = State.Running;
+                                    }
+                                    break;
+                                }
+                                else if (consoleKey == ConsoleKey.N)
+                                {
+                                    break;
+                                }
+                                else
+                                    throw new Exception("異常な入力が読み込まれました。\n");
+                        }
+                    }
                 }
             }
         }
@@ -558,5 +857,4 @@ namespace RoppyakkenApplication
         Manual = 0x1,
         Auto = 0x2
     }
-
 }

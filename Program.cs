@@ -533,6 +533,7 @@ namespace RoppyakkenApplication
         private Yamafuda yamafuda = new Yamafuda();
         private List<Player> players = new List<Player>();
         private Bafuda bafuda;
+        private Pattern nanatan = Pattern.FujiAndTanzakuAka | Pattern.AyameAndTanzakuAka | Pattern.HagiAndTanzakuAka | Pattern.UmeAndTanzakuAka | Pattern.MatsuAndTanzakuAka | Pattern.SakuraAndTanzakuAka | Pattern.BotanAndTanzakuAo | Pattern.KikuAndTanzakuAo | Pattern.MomijiAndTanzakuAo;
         private void Build(int count)
         {
             bafuda = new Bafuda("東1棟1F席1", yamafuda);
@@ -655,7 +656,6 @@ namespace RoppyakkenApplication
                 score += 300;
             if (tokutenfudaPattern.HasFlag(Pattern.MatsuAndTsuru) && tokutenfudaPattern.HasFlag(Pattern.KiriAndHouou) && tokutenfudaPattern.HasFlag(Pattern.SusukiAndTsuki) && tokutenfudaPattern.HasFlag(Pattern.SakuraAndMaku))
                 score += 600;
-            Pattern nanatan = Pattern.FujiAndTanzakuAka | Pattern.AyameAndTanzakuAka | Pattern.HagiAndTanzakuAka | Pattern.UmeAndTanzakuAka | Pattern.MatsuAndTanzakuAka | Pattern.SakuraAndTanzakuAka | Pattern.BotanAndTanzakuAo | Pattern.KikuAndTanzakuAo | Pattern.MomijiAndTanzakuAo;
             if (BitCnt1((long)(tokutenfudaPattern & nanatan)) >= 7)
                 score += 600;
 

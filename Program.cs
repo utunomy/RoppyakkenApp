@@ -160,9 +160,20 @@ namespace RoppyakkenApplication
     /// </summary>
     class Player : CardSet
     {
-        public Player(string name, Yamafuda yamafuda, Handle playerHandle) : base(name, yamafuda)
+        public Player(string name, Yamafuda yamafuda, Handle playerHandle, int count, Manager manager) : base(name, yamafuda)
         {
             this.playerHandle = playerHandle;
+            Manager = manager;
+            if (count == 2) TakeToYamafuda(8);
+            else if (count == 3) TakeToYamafuda(7);
+            else
+            {
+                throw new Exception();
+            }
+            if (playerHandle == Handle.AI1)
+            {
+                MakeChoiceDictionary();
+            }
         }
         /// <summary>
         /// 得点となる札。
@@ -184,11 +195,15 @@ namespace RoppyakkenApplication
         /// </summary>
         public int Score { get; set; }
         public State PlayerState { get; set; }
-        private readonly Handle playerHandle;
+        private Handle playerHandle;
         public Handle PlayerHandle { get { return playerHandle; } }
         public PlayerFlags PlayerFlag { get; set; }
+        private Dictionary<Pattern, int> choiceDictionary = new Dictionary<Pattern, int>();
+        public Dictionary<Pattern, int> ChoiceDictionary { get { return choiceDictionary; } }
+        public Manager Manager { get; set; }
+        
         /// <summary>
-        /// 選択肢は、異常な入力に対してExceptionを発生させる事で閉じている必要がある。
+        /// 
         /// </summary>
         /// <param name="bafuda"></param>
         /// <param name="card"></param>
@@ -205,20 +220,40 @@ namespace RoppyakkenApplication
                     }
                     else if (1 < matchCount)
                     {
-                        List<Card> matchedCards = bafuda.MatchedCards(playerCard);
-                        bafuda.TakeToMatch(this, playerCard, bafuda.Hand.IndexOf(matchedCards[0]));
+                        if (playerCard.CardPattern == Pattern.YanagiAndKaeru)
+                        {
+                            bafuda.TakeToMatchOnYanagiAndKaeru(this, playerCard, bafuda.Hand.IndexOf(bafuda.MatchedCardsOnYanagiAndKaeru()[0]));
+                        }
+                        else
+                        {
+                            bafuda.TakeToMatch(this, playerCard, bafuda.Hand.IndexOf(bafuda.MatchedCards(playerCard)[0]));
+                        }
                     }
                     else if (1 == matchCount)
                     {
-                        // 場札に一致する札が存在するため一致する札を一枚tokutenfudaに加える。
-                        bafuda.TakeToMatch(this, playerCard);
+                        if (playerCard.CardPattern == Pattern.YanagiAndKaeru)
+                        {
+                            bafuda.TakeToMatchOnYanagiAndKaeru(this, playerCard, bafuda.Hand.IndexOf(bafuda.MatchedCardsOnYanagiAndKaeru()[0]));
+                        }
+                        else
+                        {
+                            bafuda.TakeToMatch(this, playerCard, bafuda.Hand.IndexOf(bafuda.MatchedCards(playerCard)[0]));
+                        }
                     }
                     else if (0 == matchCount)
                     {
-                        bafuda.TakeToMatchOnYanagiAndKaeru(this, playerCard, 0);
+                        if (playerCard.CardPattern == Pattern.YanagiAndKaeru)
+                        {
+                            bafuda.TakeToMatchOnYanagiAndKaeru(this, playerCard, bafuda.Hand.IndexOf(bafuda.MatchedCardsOnYanagiAndKaeru()[0]));
+                        }
+                        else
+                        {
+                            bafuda.AddHand(playerCard);
+                            RemoveHand(playerCard);
+                        }
                     }
                 }
-                else
+                else if (!PlayerFlag.HasFlag(PlayerFlags.HandInYanagiAndKaeru))
                 {
                     int matchCount = bafuda.MatchManthCount(playerCard);
                     if (3 == matchCount)
@@ -232,38 +267,56 @@ namespace RoppyakkenApplication
                     }
                     else if (1 == matchCount)
                     {
-                        // 場札に一致する札が存在するため一致する札を一枚tokutenfudaに加える。
                         bafuda.TakeToMatch(this, playerCard);
                     }
                     else if (0 == matchCount)
                     {
-                        // 例外処理はbafudaクラス内に閉じ込める。
                         bafuda.AddHand(playerCard);
                         RemoveHand(playerCard);
                     }
                 }
             }
-            else
+            else if (!bafuda.BafudaFlag.HasFlag(BafudaFlags.ThreePiecesOfTheSameKind))
             {
                 if (PlayerFlag.HasFlag(PlayerFlags.HandInYanagiAndKaeru))
                 {
                     int matchCount = bafuda.MatchManthCount(playerCard);
                     if (1 < matchCount)
                     {
-                        List<Card> matchedCards = bafuda.MatchedCards(playerCard);
-                        bafuda.TakeToMatch(this, playerCard, bafuda.Hand.IndexOf(matchedCards[0]));
+                        if (playerCard.CardPattern == Pattern.YanagiAndKaeru)
+                        {
+                            bafuda.TakeToMatchOnYanagiAndKaeru(this, playerCard, bafuda.Hand.IndexOf(bafuda.MatchedCardsOnYanagiAndKaeru()[0]));
+                        }
+                        else
+                        {
+                            bafuda.TakeToMatch(this, playerCard, bafuda.Hand.IndexOf(bafuda.MatchedCards(playerCard)[0]));
+                        }
                     }
                     else if (1 == matchCount)
                     {
-                        // 場札に一致する札が存在するため一致する札を一枚tokutenfudaに加える。
-                        bafuda.TakeToMatch(this, playerCard);
+                        if (playerCard.CardPattern == Pattern.YanagiAndKaeru)
+                        {
+                            bafuda.TakeToMatchOnYanagiAndKaeru(this, playerCard, bafuda.Hand.IndexOf(bafuda.MatchedCardsOnYanagiAndKaeru()[0]));
+                        }
+                        else
+                        {
+                            bafuda.TakeToMatch(this, playerCard, bafuda.Hand.IndexOf(bafuda.MatchedCards(playerCard)[0]));
+                        }
                     }
                     else if (0 == matchCount)
                     {
-                        bafuda.TakeToMatchOnYanagiAndKaeru(this, playerCard, 0);
+                        if (playerCard.CardPattern == Pattern.YanagiAndKaeru)
+                        {
+                            bafuda.TakeToMatchOnYanagiAndKaeru(this, playerCard, bafuda.Hand.IndexOf(bafuda.MatchedCardsOnYanagiAndKaeru()[0]));
+                        }
+                        else
+                        {
+                            bafuda.AddHand(playerCard);
+                            RemoveHand(playerCard);
+                        }
                     }
                 }
-                else
+                else if (!PlayerFlag.HasFlag(PlayerFlags.HandInYanagiAndKaeru))
                 {
                     int matchCount = bafuda.MatchManthCount(playerCard);
                     if (1 < matchCount)
@@ -286,7 +339,7 @@ namespace RoppyakkenApplication
             }
         }
         /// <summary>
-        /// 選択肢は、異常な入力に対してExceptionを発生させる事で閉じている必要がある。
+        /// 
         /// </summary>
         /// <param name="bafuda"></param>
         /// <param name="card"></param>
@@ -303,20 +356,40 @@ namespace RoppyakkenApplication
                     }
                     else if (1 < matchCount)
                     {
-                        List<Card> matchedCards = bafuda.MatchedCards(playerCard);
-                        bafuda.TakeToMatch(this, playerCard, bafuda.Hand.IndexOf(matchedCards[0]));
+                        if (playerCard.CardPattern == Pattern.YanagiAndKaeru)
+                        {
+                            bafuda.TakeToMatchOnYanagiAndKaeru(this, playerCard, bafuda.Hand.IndexOf(bafuda.MatchedCardsOnYanagiAndKaeru()[0]));
+                        }
+                        else
+                        {
+                            bafuda.TakeToMatch(this, playerCard, bafuda.Hand.IndexOf(bafuda.MatchedCards(playerCard)[0]));
+                        }
                     }
                     else if (1 == matchCount)
                     {
-                        // 場札に一致する札が存在するため一致する札を一枚tokutenfudaに加える。
-                        bafuda.TakeToMatch(this, playerCard);
+                        if (playerCard.CardPattern == Pattern.YanagiAndKaeru)
+                        {
+                            bafuda.TakeToMatchOnYanagiAndKaeru(this, playerCard, bafuda.Hand.IndexOf(bafuda.MatchedCardsOnYanagiAndKaeru()[0]));
+                        }
+                        else
+                        {
+                            bafuda.TakeToMatch(this, playerCard, bafuda.Hand.IndexOf(bafuda.MatchedCards(playerCard)[0]));
+                        }
                     }
                     else if (0 == matchCount)
                     {
-                        bafuda.TakeToMatchOnYanagiAndKaeru(this, playerCard, 0);
+                        if (playerCard.CardPattern == Pattern.YanagiAndKaeru)
+                        {
+                            bafuda.TakeToMatchOnYanagiAndKaeru(this, playerCard, bafuda.Hand.IndexOf(bafuda.MatchedCardsOnYanagiAndKaeru()[0]));
+                        }
+                        else
+                        {
+                            bafuda.AddHand(playerCard);
+                            RemoveHand(playerCard);
+                        }
                     }
                 }
-                else
+                else if (!PlayerFlag.HasFlag(PlayerFlags.HandInYanagiAndKaeru))
                 {
                     int matchCount = bafuda.MatchManthCount(playerCard);
                     if (3 == matchCount)
@@ -330,38 +403,56 @@ namespace RoppyakkenApplication
                     }
                     else if (1 == matchCount)
                     {
-                        // 場札に一致する札が存在するため一致する札を一枚tokutenfudaに加える。
                         bafuda.TakeToMatch(this, playerCard);
                     }
                     else if (0 == matchCount)
                     {
-                        // 例外処理はbafudaクラス内に閉じ込める。
                         bafuda.AddHand(playerCard);
                         RemoveHand(playerCard);
                     }
                 }
             }
-            else
+            else if (!bafuda.BafudaFlag.HasFlag(BafudaFlags.ThreePiecesOfTheSameKind))
             {
                 if (PlayerFlag.HasFlag(PlayerFlags.HandInYanagiAndKaeru))
                 {
                     int matchCount = bafuda.MatchManthCount(playerCard);
                     if (1 < matchCount)
                     {
-                        List<Card> matchedCards = bafuda.MatchedCards(playerCard);
-                        bafuda.TakeToMatch(this, playerCard, bafuda.Hand.IndexOf(matchedCards[0]));
+                        if (playerCard.CardPattern == Pattern.YanagiAndKaeru)
+                        {
+                            bafuda.TakeToMatchOnYanagiAndKaeru(this, playerCard, bafuda.Hand.IndexOf(bafuda.MatchedCardsOnYanagiAndKaeru()[0]));
+                        }
+                        else
+                        {
+                            bafuda.TakeToMatch(this, playerCard, bafuda.Hand.IndexOf(bafuda.MatchedCards(playerCard)[0]));
+                        }
                     }
                     else if (1 == matchCount)
                     {
-                        // 場札に一致する札が存在するため一致する札を一枚tokutenfudaに加える。
-                        bafuda.TakeToMatch(this, playerCard);
+                        if (playerCard.CardPattern == Pattern.YanagiAndKaeru)
+                        {
+                            bafuda.TakeToMatchOnYanagiAndKaeru(this, playerCard, bafuda.Hand.IndexOf(bafuda.MatchedCardsOnYanagiAndKaeru()[0]));
+                        }
+                        else
+                        {
+                            bafuda.TakeToMatch(this, playerCard, bafuda.Hand.IndexOf(bafuda.MatchedCards(playerCard)[0]));
+                        }
                     }
                     else if (0 == matchCount)
                     {
-                        bafuda.TakeToMatchOnYanagiAndKaeru(this, playerCard, 0);
+                        if (playerCard.CardPattern == Pattern.YanagiAndKaeru)
+                        {
+                            bafuda.TakeToMatchOnYanagiAndKaeru(this, playerCard, bafuda.Hand.IndexOf(bafuda.MatchedCardsOnYanagiAndKaeru()[0]));
+                        }
+                        else
+                        {
+                            bafuda.AddHand(playerCard);
+                            RemoveHand(playerCard);
+                        }
                     }
                 }
-                else
+                else if (!PlayerFlag.HasFlag(PlayerFlags.HandInYanagiAndKaeru))
                 {
                     int matchCount = bafuda.MatchManthCount(playerCard);
                     if (1 < matchCount)
@@ -411,29 +502,54 @@ namespace RoppyakkenApplication
                         while (true)
                         {
                             Console.Write("どの場札を切りますか？　切りたい札のインデックスを入力して下さい。\n");
-                            ConsoleKey consoleKey = Console.ReadKey(true).Key;
+                            ConsoleKeyInfo consoleKeyInfo = Console.ReadKey(true);
                             int index;
-                            if (!Int32.TryParse(consoleKey.ToString(), out index)) continue;
-                            List<Card> matchedCards = bafuda.MatchedCards(playerCard);
-                            if (matchedCards.Any(card => bafuda.Hand.IndexOf(card) == index))
+                            if (!Int32.TryParse(consoleKeyInfo.KeyChar.ToString(), out index)) continue;
+                            
+                            if (playerCard.CardPattern == Pattern.YanagiAndKaeru)
                             {
-                                Console.Write("{0} を切りますか？ Enter or N\n", bafuda.Hand[index].CardPattern);
-                                consoleKey = Console.ReadKey(true).Key;
-                                if (consoleKey == ConsoleKey.Enter)
+                                if (bafuda.MatchedCardsOnYanagiAndKaeru().Any(card => bafuda.Hand.IndexOf(card) == index))
                                 {
-                                    Console.Write("{0} を切りました。\n", bafuda.Hand[index].CardPattern);
-                                    bafuda.TakeToMatch(this, playerCard, index);
-                                    break;
-                                }
-                                if (consoleKey == ConsoleKey.N)
-                                {
-                                    continue;
+                                    Console.Write("{0} を切りますか？ Enter or N\n", bafuda.Hand[index].CardPattern);
+                                    consoleKeyInfo = Console.ReadKey(true);
+                                    if (consoleKeyInfo.Key == ConsoleKey.Enter)
+                                    {
+                                        Console.Write("{0} を切りました。\n", bafuda.Hand[index].CardPattern);
+                                        bafuda.TakeToMatchOnYanagiAndKaeru(this, playerCard, index);
+                                        break;
+                                    }
+                                    if (consoleKeyInfo.Key == ConsoleKey.N)
+                                    {
+                                        continue;
+                                    }
+                                    else
+                                        continue;
                                 }
                                 else
                                     continue;
                             }
-                            else
-                                continue;
+                            else if (playerCard.CardPattern != Pattern.YanagiAndKaeru)
+                            {
+                                if (bafuda.MatchedCards(playerCard).Any(card => bafuda.Hand.IndexOf(card) == index))
+                                {
+                                    Console.Write("{0} を切りますか？ Enter or N\n", bafuda.Hand[index].CardPattern);
+                                    consoleKeyInfo = Console.ReadKey(true);
+                                    if (consoleKeyInfo.Key == ConsoleKey.Enter)
+                                    {
+                                        Console.Write("{0} を切りました。\n", bafuda.Hand[index].CardPattern);
+                                        bafuda.TakeToMatch(this, playerCard, index);
+                                        break;
+                                    }
+                                    if (consoleKeyInfo.Key == ConsoleKey.N)
+                                    {
+                                        continue;
+                                    }
+                                    else
+                                        continue;
+                                }
+                                else
+                                    continue;
+                            }
                         }
                     }
                     else if (1 == matchCount)
@@ -441,29 +557,39 @@ namespace RoppyakkenApplication
                         while (true)
                         {
                             Console.Write("どの場札を切りますか？　切りたい札のインデックスを入力して下さい。\n");
-                            ConsoleKey consoleKey = Console.ReadKey(true).Key;
+                            ConsoleKeyInfo consoleKeyInfo = Console.ReadKey(true);
                             int index;
-                            if (!Int32.TryParse(consoleKey.ToString(), out index)) continue;
-                            List<Card> matchedCards = bafuda.MatchedCardsOnYanagiAndKaeru();
-                            if (matchedCards.Any(card => bafuda.Hand.IndexOf(card) == index))
+                            if (!Int32.TryParse(consoleKeyInfo.KeyChar.ToString(), out index)) continue;
+
+                            if (playerCard.CardPattern == Pattern.YanagiAndKaeru)
                             {
-                                Console.Write("{0} を切りますか？ Enter or N\n", bafuda.Hand[index].CardPattern);
-                                consoleKey = Console.ReadKey(true).Key;
-                                if (consoleKey == ConsoleKey.Enter)
+                                if (bafuda.MatchedCardsOnYanagiAndKaeru().Any(card => bafuda.Hand.IndexOf(card) == index))
                                 {
-                                    Console.Write("{0} を切りました。\n", bafuda.Hand[index].CardPattern);
-                                    bafuda.TakeToMatchOnYanagiAndKaeru(this, playerCard, index);
-                                    break;
-                                }
-                                if (consoleKey == ConsoleKey.N)
-                                {
-                                    continue;
+                                    Console.Write("{0} を切りますか？ Enter or N\n", bafuda.Hand[index].CardPattern);
+                                    consoleKeyInfo = Console.ReadKey(true);
+                                    if (consoleKeyInfo.Key == ConsoleKey.Enter)
+                                    {
+                                        Console.Write("{0} を切りました。\n", bafuda.Hand[index].CardPattern);
+                                        bafuda.TakeToMatchOnYanagiAndKaeru(this, playerCard, index);
+                                        break;
+                                    }
+                                    if (consoleKeyInfo.Key == ConsoleKey.N)
+                                    {
+                                        continue;
+                                    }
+                                    else
+                                        continue;
                                 }
                                 else
                                     continue;
                             }
-                            else
-                                continue;
+                            else if (playerCard.CardPattern != Pattern.YanagiAndKaeru)
+                            {
+                                Card bafudaMatchedCard = bafuda.MatchedCard(playerCard);
+                                Console.Write("{0} を切りました。\n", bafudaMatchedCard.CardPattern);
+                                // 場札に一致する札が存在するため一致する札を一枚tokutenfudaに加える。
+                                bafuda.TakeToMatch(this, playerCard);
+                            }
                         }
                     }
                     else if (0 == matchCount)
@@ -473,29 +599,39 @@ namespace RoppyakkenApplication
                             while (true)
                             {
                                 Console.Write("どの場札を切りますか？　切りたい札のインデックスを入力して下さい。\n");
-                                ConsoleKey consoleKey = Console.ReadKey(true).Key;
+                                ConsoleKeyInfo consoleKeyInfo = Console.ReadKey(true);
                                 int index;
-                                if (!Int32.TryParse(consoleKey.ToString(), out index)) continue;
-                                List<Card> matchedCards = bafuda.MatchedCardsOnYanagiAndKaeru();
-                                if (matchedCards.Any(card => bafuda.Hand.IndexOf(card) == index))
+                                if (!Int32.TryParse(consoleKeyInfo.KeyChar.ToString(), out index)) continue;
+                                if (playerCard.CardPattern == Pattern.YanagiAndKaeru)
                                 {
-                                    Console.Write("{0} を切りますか？ Enter or N\n", bafuda.Hand[index].CardPattern);
-                                    consoleKey = Console.ReadKey(true).Key;
-                                    if (consoleKey == ConsoleKey.Enter)
+                                    if (bafuda.MatchedCardsOnYanagiAndKaeru().Any(card => bafuda.Hand.IndexOf(card) == index))
                                     {
-                                        Console.Write("{0} を切りました。\n", bafuda.Hand[index].CardPattern);
-                                        bafuda.TakeToMatchOnYanagiAndKaeru(this, playerCard, index);
-                                        break;
-                                    }
-                                    if (consoleKey == ConsoleKey.N)
-                                    {
-                                        continue;
+                                        Console.Write("{0} を切りますか？ Enter or N\n", bafuda.Hand[index].CardPattern);
+                                        consoleKeyInfo = Console.ReadKey(true);
+                                        if (consoleKeyInfo.Key == ConsoleKey.Enter)
+                                        {
+                                            Console.Write("{0} を切りました。\n", bafuda.Hand[index].CardPattern);
+                                            bafuda.TakeToMatchOnYanagiAndKaeru(this, playerCard, index);
+                                            break;
+                                        }
+                                        if (consoleKeyInfo.Key == ConsoleKey.N)
+                                        {
+                                            continue;
+                                        }
+                                        else
+                                            continue;
                                     }
                                     else
                                         continue;
                                 }
-                                else
-                                    continue;
+                                else if (playerCard.CardPattern != Pattern.YanagiAndKaeru)
+                                {
+                                    Console.Write("{0} を場に出しました。\n", playerCard.CardPattern);
+
+                                    // 例外処理はbafudaクラス内に閉じ込める。
+                                    bafuda.AddHand(playerCard);
+                                    RemoveHand(playerCard);
+                                }
                             }
                         }
                     }
@@ -513,21 +649,21 @@ namespace RoppyakkenApplication
                         while (true)
                         {
                             Console.Write("どの場札を切りますか？　切りたい札のインデックスを入力して下さい。\n");
-                            ConsoleKey consoleKey = Console.ReadKey(true).Key;
+                            ConsoleKeyInfo consoleKeyInfo = Console.ReadKey(true);
                             int index;
-                            if (!Int32.TryParse(consoleKey.ToString(), out index)) continue;
+                            if (!Int32.TryParse(consoleKeyInfo.KeyChar.ToString(), out index)) continue;
                             List<Card> matchedCards = bafuda.MatchedCards(playerCard);
                             if (matchedCards.Any(card => bafuda.Hand.IndexOf(card) == index))
                             {
                                 Console.Write("{0} を切りますか？ Enter or N\n", bafuda.Hand[index].CardPattern);
-                                consoleKey = Console.ReadKey(true).Key;
-                                if (consoleKey == ConsoleKey.Enter)
+                                consoleKeyInfo = Console.ReadKey(true);
+                                if (consoleKeyInfo.Key == ConsoleKey.Enter)
                                 {
                                     Console.Write("{0} を切りました。\n", bafuda.Hand[index].CardPattern);
                                     bafuda.TakeToMatch(this, playerCard, index);
                                     break;
                                 }
-                                if (consoleKey == ConsoleKey.N)
+                                if (consoleKeyInfo.Key == ConsoleKey.N)
                                 {
                                     continue;
                                 }
@@ -569,26 +705,51 @@ namespace RoppyakkenApplication
                             ConsoleKeyInfo consoleKeyInfo = Console.ReadKey(true);
                             int index;
                             if (!Int32.TryParse(consoleKeyInfo.KeyChar.ToString(), out index)) continue;
-                            List<Card> matchedCards = bafuda.MatchedCards(playerCard);
-                            if (matchedCards.Any(card => bafuda.Hand.IndexOf(card) == index))
+
+                            if (playerCard.CardPattern == Pattern.YanagiAndKaeru)
                             {
-                                Console.Write("{0} を切りますか？ Enter or N\n", bafuda.Hand[index].CardPattern);
-                                consoleKeyInfo = Console.ReadKey(true);
-                                if (consoleKeyInfo.Key == ConsoleKey.Enter)
+                                if (bafuda.MatchedCardsOnYanagiAndKaeru().Any(card => bafuda.Hand.IndexOf(card) == index))
                                 {
-                                    Console.Write("{0} を切りました。\n", bafuda.Hand[index].CardPattern);
-                                    bafuda.TakeToMatch(this, playerCard, index);
-                                    break;
-                                }
-                                if (consoleKeyInfo.Key == ConsoleKey.N)
-                                {
-                                    continue;
+                                    Console.Write("{0} を切りますか？ Enter or N\n", bafuda.Hand[index].CardPattern);
+                                    consoleKeyInfo = Console.ReadKey(true);
+                                    if (consoleKeyInfo.Key == ConsoleKey.Enter)
+                                    {
+                                        Console.Write("{0} を切りました。\n", bafuda.Hand[index].CardPattern);
+                                        bafuda.TakeToMatchOnYanagiAndKaeru(this, playerCard, index);
+                                        break;
+                                    }
+                                    if (consoleKeyInfo.Key == ConsoleKey.N)
+                                    {
+                                        continue;
+                                    }
+                                    else
+                                        continue;
                                 }
                                 else
                                     continue;
                             }
-                            else
-                                continue;
+                            else if (playerCard.CardPattern != Pattern.YanagiAndKaeru)
+                            {
+                                if (bafuda.MatchedCards(playerCard).Any(card => bafuda.Hand.IndexOf(card) == index))
+                                {
+                                    Console.Write("{0} を切りますか？ Enter or N\n", bafuda.Hand[index].CardPattern);
+                                    consoleKeyInfo = Console.ReadKey(true);
+                                    if (consoleKeyInfo.Key == ConsoleKey.Enter)
+                                    {
+                                        Console.Write("{0} を切りました。\n", bafuda.Hand[index].CardPattern);
+                                        bafuda.TakeToMatch(this, playerCard, index);
+                                        break;
+                                    }
+                                    if (consoleKeyInfo.Key == ConsoleKey.N)
+                                    {
+                                        continue;
+                                    }
+                                    else
+                                        continue;
+                                }
+                                else
+                                    continue;
+                            }
                         }
                     }
                     else if (1 == matchCount)
@@ -599,26 +760,36 @@ namespace RoppyakkenApplication
                             ConsoleKeyInfo consoleKeyInfo = Console.ReadKey(true);
                             int index;
                             if (!Int32.TryParse(consoleKeyInfo.KeyChar.ToString(), out index)) continue;
-                            List<Card> matchedCards = bafuda.MatchedCardsOnYanagiAndKaeru();
-                            if (matchedCards.Any(card => bafuda.Hand.IndexOf(card) == index))
+
+                            if (playerCard.CardPattern == Pattern.YanagiAndKaeru)
                             {
-                                Console.Write("{0} を切りますか？ Enter or N\n", bafuda.Hand[index].CardPattern);
-                                consoleKeyInfo = Console.ReadKey(true);
-                                if (consoleKeyInfo.Key == ConsoleKey.Enter)
+                                if (bafuda.MatchedCardsOnYanagiAndKaeru().Any(card => bafuda.Hand.IndexOf(card) == index))
                                 {
-                                    Console.Write("{0} を切りました。\n", bafuda.Hand[index].CardPattern);
-                                    bafuda.TakeToMatchOnYanagiAndKaeru(this, playerCard, index);
-                                    break;
-                                }
-                                if (consoleKeyInfo.Key == ConsoleKey.N)
-                                {
-                                    continue;
+                                    Console.Write("{0} を切りますか？ Enter or N\n", bafuda.Hand[index].CardPattern);
+                                    consoleKeyInfo = Console.ReadKey(true);
+                                    if (consoleKeyInfo.Key == ConsoleKey.Enter)
+                                    {
+                                        Console.Write("{0} を切りました。\n", bafuda.Hand[index].CardPattern);
+                                        bafuda.TakeToMatchOnYanagiAndKaeru(this, playerCard, index);
+                                        break;
+                                    }
+                                    if (consoleKeyInfo.Key == ConsoleKey.N)
+                                    {
+                                        continue;
+                                    }
+                                    else
+                                        continue;
                                 }
                                 else
                                     continue;
                             }
-                            else
-                                continue;
+                            else if (playerCard.CardPattern != Pattern.YanagiAndKaeru)
+                            {
+                                Card bafudaMatchedCard = bafuda.MatchedCard(playerCard);
+                                Console.Write("{0} を切りました。\n", bafudaMatchedCard.CardPattern);
+                                // 場札に一致する札が存在するため一致する札を一枚tokutenfudaに加える。
+                                bafuda.TakeToMatch(this, playerCard);
+                            }
                         }
                     }
                     else if (0 == matchCount)
@@ -629,26 +800,37 @@ namespace RoppyakkenApplication
                             ConsoleKeyInfo consoleKeyInfo = Console.ReadKey(true);
                             int index;
                             if (!Int32.TryParse(consoleKeyInfo.KeyChar.ToString(), out index)) continue;
-                            List<Card> matchedCards = bafuda.MatchedCardsOnYanagiAndKaeru();
-                            if (matchedCards.Any(card => bafuda.Hand.IndexOf(card) == index))
+
+                            if (playerCard.CardPattern == Pattern.YanagiAndKaeru)
                             {
-                                Console.Write("{0} を切りますか？ Enter or N\n", bafuda.Hand[index].CardPattern);
-                                consoleKeyInfo = Console.ReadKey(true);
-                                if (consoleKeyInfo.Key == ConsoleKey.Enter)
+                                if (bafuda.MatchedCardsOnYanagiAndKaeru().Any(card => bafuda.Hand.IndexOf(card) == index))
                                 {
-                                    Console.Write("{0} を切りました。\n", bafuda.Hand[index].CardPattern);
-                                    bafuda.TakeToMatchOnYanagiAndKaeru(this, playerCard, index);
-                                    break;
-                                }
-                                if (consoleKeyInfo.Key == ConsoleKey.N)
-                                {
-                                    continue;
+                                    Console.Write("{0} を切りますか？ Enter or N\n", bafuda.Hand[index].CardPattern);
+                                    consoleKeyInfo = Console.ReadKey(true);
+                                    if (consoleKeyInfo.Key == ConsoleKey.Enter)
+                                    {
+                                        Console.Write("{0} を切りました。\n", bafuda.Hand[index].CardPattern);
+                                        bafuda.TakeToMatchOnYanagiAndKaeru(this, playerCard, index);
+                                        break;
+                                    }
+                                    if (consoleKeyInfo.Key == ConsoleKey.N)
+                                    {
+                                        continue;
+                                    }
+                                    else
+                                        continue;
                                 }
                                 else
                                     continue;
                             }
-                            else
-                                continue;
+                            else if (playerCard.CardPattern != Pattern.YanagiAndKaeru)
+                            {
+                                Console.Write("{0} を場に出しました。\n", playerCard.CardPattern);
+
+                                // 例外処理はbafudaクラス内に閉じ込める。
+                                bafuda.AddHand(playerCard);
+                                RemoveHand(playerCard);
+                            }
                         }
                     }
                 }
@@ -704,12 +886,65 @@ namespace RoppyakkenApplication
                 }
             }
         }
+        public void UpdateChoiceDictionary(Pattern pattern, int count)
+        {
+            if (choiceDictionary == null) throw new Exception();
+            if (choiceDictionary.Count < 0) throw new Exception();
+
+            choiceDictionary[pattern] = count;
+        }
         public void CheckFlags()
         {
             foreach (Card card in hand)
             {
                 if (card.CardPattern == Pattern.YanagiAndKaeru) PlayerFlag |= PlayerFlags.HandInYanagiAndKaeru;
             }
+        }
+        /// <summary>
+        /// ビットカウント
+        /// </summary>
+        /// <param name="val"></param>
+        /// <returns></returns>
+        public int BitCnt1(long val)
+        {
+            int cnt = 0;
+            while (val != 0)
+            {
+                if ((val & 1) != 0)
+                    cnt++;
+                val >>= 1;
+            }
+            return cnt;
+        }
+        public Dictionary<Pattern, int> ChoiceDictionaryOrderByDescending()
+        {
+            return choiceDictionary.OrderByDescending(kvp => kvp.Value).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+        }
+        public void MakeChoiceDictionary()
+        {
+            choiceDictionary.Add(Manager.Yanagi4, BitCnt1((long)(TokutenfudaPattern & Manager.Yanagi4)));
+            choiceDictionary.Add(Manager.Ayame4, BitCnt1((long)(TokutenfudaPattern & Manager.Ayame4)));
+            choiceDictionary.Add(Manager.Botan4, BitCnt1((long)(TokutenfudaPattern & Manager.Botan4)));
+            choiceDictionary.Add(Manager.Fuji4, BitCnt1((long)(TokutenfudaPattern & Manager.Fuji4)));
+            choiceDictionary.Add(Manager.Hagi4, BitCnt1((long)(TokutenfudaPattern & Manager.Hagi4)));
+            choiceDictionary.Add(Manager.Kiku4, BitCnt1((long)(TokutenfudaPattern & Manager.Kiku4)));
+            choiceDictionary.Add(Manager.Kiri4, BitCnt1((long)(TokutenfudaPattern & Manager.Kiri4)));
+            choiceDictionary.Add(Manager.Matsu4, BitCnt1((long)(TokutenfudaPattern & Manager.Matsu4)));
+            choiceDictionary.Add(Manager.Momiji4, BitCnt1((long)(TokutenfudaPattern & Manager.Momiji4)));
+            choiceDictionary.Add(Manager.Sakura4, BitCnt1((long)(TokutenfudaPattern & Manager.Sakura4)));
+            choiceDictionary.Add(Manager.Susuki4, BitCnt1((long)(TokutenfudaPattern & Manager.Susuki4)));
+            choiceDictionary.Add(Manager.Ume4, BitCnt1((long)(TokutenfudaPattern & Manager.Ume4)));
+            choiceDictionary.Add(Manager.Akatan, BitCnt1((long)(TokutenfudaPattern & Manager.Akatan)));
+            choiceDictionary.Add(Manager.Aotan, BitCnt1((long)(TokutenfudaPattern & Manager.Aotan)));
+            choiceDictionary.Add(Manager.Kozan, BitCnt1((long)(TokutenfudaPattern & Manager.Kozan)));
+            choiceDictionary.Add(Manager.Oozan, BitCnt1((long)(TokutenfudaPattern & Manager.Oozan)));
+            choiceDictionary.Add(Manager.TsukimideIppai, BitCnt1((long)(TokutenfudaPattern & Manager.TsukimideIppai)));
+            choiceDictionary.Add(Manager.HanamideIppai, BitCnt1((long)(TokutenfudaPattern & Manager.HanamideIppai)));
+            choiceDictionary.Add(Manager.Teppou, BitCnt1((long)(TokutenfudaPattern & Manager.Teppou)));
+            choiceDictionary.Add(Manager.MatsuKiriBouzu, BitCnt1((long)(TokutenfudaPattern & Manager.MatsuKiriBouzu)));
+            choiceDictionary.Add(Manager.InoShikaChou, BitCnt1((long)(TokutenfudaPattern & Manager.InoShikaChou)));
+            choiceDictionary.Add(Manager.Shikou, BitCnt1((long)(TokutenfudaPattern & Manager.Shikou)));
+            choiceDictionary.Add(Manager.Nanatan, BitCnt1((long)(TokutenfudaPattern & Manager.Nanatan)));
         }
     }
     class Card
@@ -935,25 +1170,33 @@ namespace RoppyakkenApplication
             // フラグを落とす。
             BafudaFlag &= ~BafudaFlags.ThreePiecesOfTheSameKind;
         }
+        /// <summary>
+        /// playerCardが柳に蛙札の場合の処理。
+        /// </summary>
+        /// <param name="player"></param>
+        /// <param name="playerCard"></param>
+        /// <param name="index"></param>
         public void TakeToMatchOnYanagiAndKaeru(Player player, Card playerCard, int index)
         {
+            if (hand[index].Point != 0)
+            {
+                player.AddTokutenfuda(playerCard);
+                player.AddTokutenfuda(hand[index]);
+
+                RemoveHand(hand[index]);
+                player.RemoveHand(playerCard);
+            }
+            else
+            {
+                AddHand(playerCard);
+                player.RemoveHand(playerCard);
+            }
+            // フラグを落とす。
+            player.PlayerFlag &= ~PlayerFlags.HandInYanagiAndKaeru;
+            /*
             if (playerCard.CardPattern == Pattern.YanagiAndKaeru)
             {
-                if (hand[index].Point != 0)
-                {
-                    player.AddTokutenfuda(playerCard);
-                    player.AddTokutenfuda(hand[index]);
-
-                    RemoveHand(hand[index]);
-                    player.RemoveHand(playerCard);
-                }
-                else
-                {
-                    AddHand(playerCard);
-                    player.RemoveHand(playerCard);
-                }
-                // フラグを落とす。
-                player.PlayerFlag &= ~PlayerFlags.HandInYanagiAndKaeru;
+                
             }
             else
             {
@@ -967,7 +1210,7 @@ namespace RoppyakkenApplication
                     player.RemoveHand(playerCard);
 
                 }
-            }
+            }*/
         }
         /// <summary>
         /// 一致するカードを返す。
@@ -1039,29 +1282,29 @@ namespace RoppyakkenApplication
         private Yamafuda yamafuda = new Yamafuda();
         private List<Player> players = new List<Player>();
         private Bafuda bafuda;
-        Pattern Yanagi4 = Pattern.Yanagi | Pattern.YanagiAndKaeru | Pattern.YanagiAndTanzakuAka | Pattern.YanagiAndTsubame;
-        Pattern Ayame4 = Pattern.Ayame1 | Pattern.Ayame2 | Pattern.AyameAndHashi | Pattern.AyameAndTanzakuAka;
-        Pattern Botan4 = Pattern.Botan1 | Pattern.Botan2 | Pattern.BotanAndChou | Pattern.BotanAndTanzakuAo;
-        Pattern Fuji4 = Pattern.Fuji1 | Pattern.Fuji2 | Pattern.FujiAndHototogisu | Pattern.FujiAndTanzakuAka;
-        Pattern Hagi4 = Pattern.Hagi1 | Pattern.Hagi2 | Pattern.HagiAndInoshishi | Pattern.HagiAndTanzakuAka;
-        Pattern Kiku4 = Pattern.Kiku1 | Pattern.Kiku2 | Pattern.KikuAndOchoko | Pattern.KikuAndTanzakuAo;
-        Pattern Kiri4 = Pattern.Kiri1 | Pattern.Kiri2 | Pattern.KiriAndHouou | Pattern.KiriAndYellow;
-        Pattern Matsu4 = Pattern.Matsu1 | Pattern.Matsu2 | Pattern.MatsuAndTanzakuAka | Pattern.MatsuAndTsuru;
-        Pattern Momiji4 = Pattern.Momiji1 | Pattern.Momiji2 | Pattern.MomijiAndShika | Pattern.MomijiAndTanzakuAo;
-        Pattern Sakura4 = Pattern.Sakura1 | Pattern.Sakura2 | Pattern.SakuraAndMaku | Pattern.SakuraAndTanzakuAka;
-        Pattern Susuki4 = Pattern.Susuki1 | Pattern.Susuki2 | Pattern.SusukiAndGan | Pattern.SusukiAndTsuki;
-        Pattern Ume4 = Pattern.Ume1 | Pattern.Ume2 | Pattern.UmeAndTanzakuAka | Pattern.UmeAndUguisu;
-        Pattern Akatan = Pattern.FujiAndTanzakuAka | Pattern.AyameAndTanzakuAka | Pattern.HagiAndTanzakuAka;
-        Pattern Aotan = Pattern.BotanAndTanzakuAo | Pattern.KikuAndTanzakuAo | Pattern.MomijiAndTanzakuAo;
-        Pattern Kozan = Pattern.UmeAndTanzakuAka | Pattern.MatsuAndTanzakuAka | Pattern.SakuraAndTanzakuAka;
-        Pattern Oozan = Pattern.UmeAndUguisu | Pattern.MatsuAndTsuru | Pattern.SakuraAndMaku;
-        Pattern TsukimideIppai = Pattern.SusukiAndTsuki | Pattern.KikuAndOchoko;
-        Pattern HanamideIppai = Pattern.SakuraAndMaku | Pattern.KikuAndOchoko;
-        Pattern Teppou = Pattern.SusukiAndTsuki | Pattern.SakuraAndMaku | Pattern.KikuAndOchoko;
-        Pattern MatsuKiriBouzu = Pattern.MatsuAndTsuru | Pattern.KiriAndHouou | Pattern.SusukiAndTsuki;
-        Pattern InoShikaChou = Pattern.HagiAndInoshishi | Pattern.MomijiAndShika | Pattern.BotanAndChou;
-        Pattern Shikou = Pattern.MatsuAndTsuru | Pattern.KiriAndHouou | Pattern.SusukiAndTsuki | Pattern.SakuraAndMaku;
-        Pattern Nanatan = Pattern.FujiAndTanzakuAka | Pattern.AyameAndTanzakuAka | Pattern.HagiAndTanzakuAka | Pattern.UmeAndTanzakuAka | Pattern.MatsuAndTanzakuAka | Pattern.SakuraAndTanzakuAka | Pattern.BotanAndTanzakuAo | Pattern.KikuAndTanzakuAo | Pattern.MomijiAndTanzakuAo;
+        public Pattern Yanagi4 = Pattern.Yanagi | Pattern.YanagiAndKaeru | Pattern.YanagiAndTanzakuAka | Pattern.YanagiAndTsubame;
+        public Pattern Ayame4 = Pattern.Ayame1 | Pattern.Ayame2 | Pattern.AyameAndHashi | Pattern.AyameAndTanzakuAka;
+        public Pattern Botan4 = Pattern.Botan1 | Pattern.Botan2 | Pattern.BotanAndChou | Pattern.BotanAndTanzakuAo;
+        public Pattern Fuji4 = Pattern.Fuji1 | Pattern.Fuji2 | Pattern.FujiAndHototogisu | Pattern.FujiAndTanzakuAka;
+        public Pattern Hagi4 = Pattern.Hagi1 | Pattern.Hagi2 | Pattern.HagiAndInoshishi | Pattern.HagiAndTanzakuAka;
+        public Pattern Kiku4 = Pattern.Kiku1 | Pattern.Kiku2 | Pattern.KikuAndOchoko | Pattern.KikuAndTanzakuAo;
+        public Pattern Kiri4 = Pattern.Kiri1 | Pattern.Kiri2 | Pattern.KiriAndHouou | Pattern.KiriAndYellow;
+        public Pattern Matsu4 = Pattern.Matsu1 | Pattern.Matsu2 | Pattern.MatsuAndTanzakuAka | Pattern.MatsuAndTsuru;
+        public Pattern Momiji4 = Pattern.Momiji1 | Pattern.Momiji2 | Pattern.MomijiAndShika | Pattern.MomijiAndTanzakuAo;
+        public Pattern Sakura4 = Pattern.Sakura1 | Pattern.Sakura2 | Pattern.SakuraAndMaku | Pattern.SakuraAndTanzakuAka;
+        public Pattern Susuki4 = Pattern.Susuki1 | Pattern.Susuki2 | Pattern.SusukiAndGan | Pattern.SusukiAndTsuki;
+        public Pattern Ume4 = Pattern.Ume1 | Pattern.Ume2 | Pattern.UmeAndTanzakuAka | Pattern.UmeAndUguisu;
+        public Pattern Akatan = Pattern.FujiAndTanzakuAka | Pattern.AyameAndTanzakuAka | Pattern.HagiAndTanzakuAka;
+        public Pattern Aotan = Pattern.BotanAndTanzakuAo | Pattern.KikuAndTanzakuAo | Pattern.MomijiAndTanzakuAo;
+        public Pattern Kozan = Pattern.UmeAndTanzakuAka | Pattern.MatsuAndTanzakuAka | Pattern.SakuraAndTanzakuAka;
+        public Pattern Oozan = Pattern.UmeAndUguisu | Pattern.MatsuAndTsuru | Pattern.SakuraAndMaku;
+        public Pattern TsukimideIppai = Pattern.SusukiAndTsuki | Pattern.KikuAndOchoko;
+        public Pattern HanamideIppai = Pattern.SakuraAndMaku | Pattern.KikuAndOchoko;
+        public Pattern Teppou = Pattern.SusukiAndTsuki | Pattern.SakuraAndMaku | Pattern.KikuAndOchoko;
+        public Pattern MatsuKiriBouzu = Pattern.MatsuAndTsuru | Pattern.KiriAndHouou | Pattern.SusukiAndTsuki;
+        public Pattern InoShikaChou = Pattern.HagiAndInoshishi | Pattern.MomijiAndShika | Pattern.BotanAndChou;
+        public Pattern Shikou = Pattern.MatsuAndTsuru | Pattern.KiriAndHouou | Pattern.SusukiAndTsuki | Pattern.SakuraAndMaku;
+        public Pattern Nanatan = Pattern.FujiAndTanzakuAka | Pattern.AyameAndTanzakuAka | Pattern.HagiAndTanzakuAka | Pattern.UmeAndTanzakuAka | Pattern.MatsuAndTanzakuAka | Pattern.SakuraAndTanzakuAka | Pattern.BotanAndTanzakuAo | Pattern.KikuAndTanzakuAo | Pattern.MomijiAndTanzakuAo;
         private void Build(int count)
         {
             bafuda = new Bafuda("東1棟1F席1", yamafuda);
@@ -1069,29 +1312,20 @@ namespace RoppyakkenApplication
             {
                 bafuda.TakeToYamafuda(8);
                 bafuda.CheckFlags();
-                players.Add(new Player("太郎", yamafuda, Handle.Manual));
-                players.Add(new Player("和美", yamafuda, Handle.Auto));
-                players[0].TakeToYamafuda(8);
-                players[1].TakeToYamafuda(8);
+                players.Add(new Player("太郎", yamafuda, Handle.AI1, count, this));
+                players.Add(new Player("和美", yamafuda, Handle.AI1, count, this));
                 players = players.OrderBy(i => Guid.NewGuid()).ToList();
                 players[0].PlayerState = State.Running;
                 players[1].PlayerState = State.Waiting;
-                foreach (Player player in players)
-                {
-                    
-                }
                 Play();
             }
             if (count == 3)
             {
                 bafuda.TakeToYamafuda(6);
                 bafuda.CheckFlags();
-                players.Add(new Player("太郎", yamafuda, Handle.Manual));
-                players.Add(new Player("和美", yamafuda, Handle.Auto));
-                players.Add(new Player("紗子", yamafuda, Handle.Auto));
-                players[0].TakeToYamafuda(7);
-                players[1].TakeToYamafuda(7);
-                players[2].TakeToYamafuda(7);
+                players.Add(new Player("太郎", yamafuda, Handle.Auto, count, this));
+                players.Add(new Player("和美", yamafuda, Handle.Auto, count, this));
+                players.Add(new Player("紗子", yamafuda, Handle.Auto, count, this));
                 players = players.OrderBy(i => Guid.NewGuid()).ToList();
                 players[0].PlayerState = State.Running;
                 players[1].PlayerState = State.Waiting;
@@ -1101,18 +1335,12 @@ namespace RoppyakkenApplication
         }
         public Player GetNextPlayer(Player currentPlayer)
         {
-            string currentPlayerName = currentPlayer.Name;
-            int index = -1;
-            for (int i = 0; i < players.Count; i++)
+            int index = players.IndexOf(currentPlayer);
+            if (index == players.Count - 1)
             {
-                if (currentPlayerName == players[i].Name)
-                {
-                    index = i;
-                }
+                return players[0];
             }
-            if (index == players.Count - 1) return players[0];
-            else if (0 <= index && index < players.Count - 1) return players[++index];
-            else throw new ArgumentOutOfRangeException();
+            else return players[++index];
         }
         public bool isNextPlayer()
         {
@@ -1196,31 +1424,31 @@ namespace RoppyakkenApplication
         }
         public Card ChoiceAI1(Player currentPlayer)
         {
+            currentPlayer.UpdateChoiceDictionary(Yanagi4, BitCnt1((long)(currentPlayer.TokutenfudaPattern & Yanagi4)));
+            currentPlayer.UpdateChoiceDictionary(Ayame4, BitCnt1((long)(currentPlayer.TokutenfudaPattern & Ayame4)));
+            currentPlayer.UpdateChoiceDictionary(Botan4, BitCnt1((long)(currentPlayer.TokutenfudaPattern & Botan4)));
+            currentPlayer.UpdateChoiceDictionary(Fuji4, BitCnt1((long)(currentPlayer.TokutenfudaPattern & Fuji4)));
+            currentPlayer.UpdateChoiceDictionary(Hagi4, BitCnt1((long)(currentPlayer.TokutenfudaPattern & Hagi4)));
+            currentPlayer.UpdateChoiceDictionary(Kiku4, BitCnt1((long)(currentPlayer.TokutenfudaPattern & Kiku4)));
+            currentPlayer.UpdateChoiceDictionary(Kiri4, BitCnt1((long)(currentPlayer.TokutenfudaPattern & Kiri4)));
+            currentPlayer.UpdateChoiceDictionary(Matsu4, BitCnt1((long)(currentPlayer.TokutenfudaPattern & Matsu4)));
+            currentPlayer.UpdateChoiceDictionary(Momiji4, BitCnt1((long)(currentPlayer.TokutenfudaPattern & Momiji4)));
+            currentPlayer.UpdateChoiceDictionary(Sakura4, BitCnt1((long)(currentPlayer.TokutenfudaPattern & Sakura4)));
+            currentPlayer.UpdateChoiceDictionary(Susuki4, BitCnt1((long)(currentPlayer.TokutenfudaPattern & Susuki4)));
+            currentPlayer.UpdateChoiceDictionary(Ume4, BitCnt1((long)(currentPlayer.TokutenfudaPattern & Ume4)));
+            currentPlayer.UpdateChoiceDictionary(Akatan, BitCnt1((long)(currentPlayer.TokutenfudaPattern & Akatan)));
+            currentPlayer.UpdateChoiceDictionary(Aotan, BitCnt1((long)(currentPlayer.TokutenfudaPattern & Aotan)));
+            currentPlayer.UpdateChoiceDictionary(Kozan, BitCnt1((long)(currentPlayer.TokutenfudaPattern & Kozan)));
+            currentPlayer.UpdateChoiceDictionary(Oozan, BitCnt1((long)(currentPlayer.TokutenfudaPattern & Oozan)));
+            currentPlayer.UpdateChoiceDictionary(TsukimideIppai, BitCnt1((long)(currentPlayer.TokutenfudaPattern & TsukimideIppai)));
+            currentPlayer.UpdateChoiceDictionary(HanamideIppai, BitCnt1((long)(currentPlayer.TokutenfudaPattern & HanamideIppai)));
+            currentPlayer.UpdateChoiceDictionary(Teppou, BitCnt1((long)(currentPlayer.TokutenfudaPattern & Teppou)));
+            currentPlayer.UpdateChoiceDictionary(MatsuKiriBouzu, BitCnt1((long)(currentPlayer.TokutenfudaPattern & MatsuKiriBouzu)));
+            currentPlayer.UpdateChoiceDictionary(InoShikaChou, BitCnt1((long)(currentPlayer.TokutenfudaPattern & InoShikaChou)));
+            currentPlayer.UpdateChoiceDictionary(Shikou, BitCnt1((long)(currentPlayer.TokutenfudaPattern & Shikou)));
+            currentPlayer.UpdateChoiceDictionary(Nanatan, BitCnt1((long)(currentPlayer.TokutenfudaPattern & Nanatan)));
             Dictionary<Pattern, int> choiceDict = new Dictionary<Pattern, int>();
-            choiceDict.Add(Yanagi4, BitCnt1((long)(currentPlayer.TokutenfudaPattern & Yanagi4)));
-            choiceDict.Add(Ayame4, BitCnt1((long)(currentPlayer.TokutenfudaPattern & Ayame4)));
-            choiceDict.Add(Botan4, BitCnt1((long)(currentPlayer.TokutenfudaPattern & Botan4)));
-            choiceDict.Add(Fuji4, BitCnt1((long)(currentPlayer.TokutenfudaPattern & Fuji4)));
-            choiceDict.Add(Hagi4, BitCnt1((long)(currentPlayer.TokutenfudaPattern & Hagi4)));
-            choiceDict.Add(Kiku4, BitCnt1((long)(currentPlayer.TokutenfudaPattern & Kiku4)));
-            choiceDict.Add(Kiri4, BitCnt1((long)(currentPlayer.TokutenfudaPattern & Kiri4)));
-            choiceDict.Add(Matsu4, BitCnt1((long)(currentPlayer.TokutenfudaPattern & Matsu4)));
-            choiceDict.Add(Momiji4, BitCnt1((long)(currentPlayer.TokutenfudaPattern & Momiji4)));
-            choiceDict.Add(Sakura4, BitCnt1((long)(currentPlayer.TokutenfudaPattern & Sakura4)));
-            choiceDict.Add(Susuki4, BitCnt1((long)(currentPlayer.TokutenfudaPattern & Susuki4)));
-            choiceDict.Add(Ume4, BitCnt1((long)(currentPlayer.TokutenfudaPattern & Ume4)));
-            choiceDict.Add(Akatan, BitCnt1((long)(currentPlayer.TokutenfudaPattern & Akatan)));
-            choiceDict.Add(Aotan, BitCnt1((long)(currentPlayer.TokutenfudaPattern & Aotan)));
-            choiceDict.Add(Kozan, BitCnt1((long)(currentPlayer.TokutenfudaPattern & Kozan)));
-            choiceDict.Add(Oozan, BitCnt1((long)(currentPlayer.TokutenfudaPattern & Oozan)));
-            choiceDict.Add(TsukimideIppai, BitCnt1((long)(currentPlayer.TokutenfudaPattern & TsukimideIppai)));
-            choiceDict.Add(HanamideIppai, BitCnt1((long)(currentPlayer.TokutenfudaPattern & HanamideIppai)));
-            choiceDict.Add(Teppou, BitCnt1((long)(currentPlayer.TokutenfudaPattern & Teppou)));
-            choiceDict.Add(MatsuKiriBouzu, BitCnt1((long)(currentPlayer.TokutenfudaPattern & MatsuKiriBouzu)));
-            choiceDict.Add(InoShikaChou, BitCnt1((long)(currentPlayer.TokutenfudaPattern & InoShikaChou)));
-            choiceDict.Add(Shikou, BitCnt1((long)(currentPlayer.TokutenfudaPattern & Shikou)));
-            choiceDict.Add(Nanatan, BitCnt1((long)(currentPlayer.TokutenfudaPattern & Nanatan)));
-            choiceDict = choiceDict.OrderByDescending(kvp => kvp.Value).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+            choiceDict = currentPlayer.ChoiceDictionaryOrderByDescending();
             Pattern choicePattern = choiceDict.Keys.First();
             Pattern choiceCards = currentPlayer.TokutenfudaPattern & ~choicePattern;
             if (currentPlayer.HandPattern.HasFlag(choiceCards))
@@ -1240,7 +1468,11 @@ namespace RoppyakkenApplication
             }
             choice.Distinct();
             choice = choice.OrderByDescending(card => card.Point).ToList();
-            return choice[0];
+            if (0 < choice.Count)
+            {
+                return choice[0];
+            }
+            return currentPlayer.Hand[0];
         }
         /// <summary>
         /// 六百間をプレイする。
@@ -1253,6 +1485,7 @@ namespace RoppyakkenApplication
             {
                 if (currentPlayer.PlayerHandle == Handle.Auto)
                 {
+                    Fill();
                     // 手札から場札に一枚出す。
                     currentPlayer.ThrowToAuto(bafuda, currentPlayer.Hand[0]);
                     
@@ -1267,7 +1500,7 @@ namespace RoppyakkenApplication
                     currentPlayer.AddHand(popCard);
                     currentPlayer.ThrowToAuto(bafuda, popCard);
                     CalculateScore(currentPlayer);
-                    Fill();
+                    
                     // 次の手番のプレイヤーを呼び出す。
                     currentPlayer.PlayerState = State.Waiting;
                     if (isNextPlayer())
@@ -1278,6 +1511,7 @@ namespace RoppyakkenApplication
                 }
                 else if (currentPlayer.PlayerHandle == Handle.AI1)
                 {
+                    Fill();
                     // 手札から場札に一枚出す。
                     currentPlayer.ThrowToAuto(bafuda, ChoiceAI1(currentPlayer));
 
@@ -1292,7 +1526,7 @@ namespace RoppyakkenApplication
                     currentPlayer.AddHand(popCard);
                     currentPlayer.ThrowToAuto(bafuda, popCard);
                     CalculateScore(currentPlayer);
-                    Fill();
+                    
                     // 次の手番のプレイヤーを呼び出す。
                     currentPlayer.PlayerState = State.Waiting;
                     if (isNextPlayer())
@@ -1316,7 +1550,6 @@ namespace RoppyakkenApplication
                                 consoleKey = Console.ReadKey(true).Key;
                                 if (consoleKey == ConsoleKey.Enter)
                                 {
-                                    Console.Write("{0} を出しました。\n", currentPlayer.GetHandPattern(0));
                                     currentPlayer.ThrowToManual(bafuda, currentPlayer.Hand[0]);
                                     // 山札から場札に一枚出す。
                                     Card popCard = yamafuda.CardPop();
@@ -1331,7 +1564,7 @@ namespace RoppyakkenApplication
                                     currentPlayer.AddHand(popCard);
                                     currentPlayer.ThrowToManual(bafuda, popCard);
                                     CalculateScore(currentPlayer);
-                                    Fill();
+
                                     // 次の手番のプレイヤーを呼び出す。
                                     currentPlayer.PlayerState = State.Waiting;
                                     if (isNextPlayer())
@@ -1368,7 +1601,7 @@ namespace RoppyakkenApplication
                                     currentPlayer.AddHand(popCard);
                                     currentPlayer.ThrowToManual(bafuda, popCard);
                                     CalculateScore(currentPlayer);
-                                    Fill();
+                                   
                                     // 次の手番のプレイヤーを呼び出す。
                                     currentPlayer.PlayerState = State.Waiting;
                                     if (isNextPlayer())
@@ -1405,7 +1638,7 @@ namespace RoppyakkenApplication
                                     currentPlayer.AddHand(popCard);
                                     currentPlayer.ThrowToManual(bafuda, popCard);
                                     CalculateScore(currentPlayer);
-                                    Fill();
+                                    
                                     // 次の手番のプレイヤーを呼び出す。
                                     currentPlayer.PlayerState = State.Waiting;
                                     if (isNextPlayer())
@@ -1442,7 +1675,7 @@ namespace RoppyakkenApplication
                                     currentPlayer.AddHand(popCard);
                                     currentPlayer.ThrowToManual(bafuda, popCard);
                                     CalculateScore(currentPlayer);
-                                    Fill();
+                                    
                                     // 次の手番のプレイヤーを呼び出す。
                                     currentPlayer.PlayerState = State.Waiting;
                                     if (isNextPlayer())
@@ -1479,7 +1712,7 @@ namespace RoppyakkenApplication
                                     currentPlayer.AddHand(popCard);
                                     currentPlayer.ThrowToManual(bafuda, popCard);
                                     CalculateScore(currentPlayer);
-                                    Fill();
+                                    
                                     // 次の手番のプレイヤーを呼び出す。
                                     currentPlayer.PlayerState = State.Waiting;
                                     if (isNextPlayer())
@@ -1516,7 +1749,7 @@ namespace RoppyakkenApplication
                                     currentPlayer.AddHand(popCard);
                                     currentPlayer.ThrowToManual(bafuda, popCard);
                                     CalculateScore(currentPlayer);
-                                    Fill();
+                                    
                                     // 次の手番のプレイヤーを呼び出す。
                                     currentPlayer.PlayerState = State.Waiting;
                                     if (isNextPlayer())
@@ -1553,7 +1786,7 @@ namespace RoppyakkenApplication
                                     currentPlayer.AddHand(popCard);
                                     currentPlayer.ThrowToManual(bafuda, popCard);
                                     CalculateScore(currentPlayer);
-                                    Fill();
+                                    
                                     // 次の手番のプレイヤーを呼び出す。
                                     currentPlayer.PlayerState = State.Waiting;
                                     if (isNextPlayer())
@@ -1590,7 +1823,7 @@ namespace RoppyakkenApplication
                                     currentPlayer.AddHand(popCard);
                                     currentPlayer.ThrowToManual(bafuda, popCard);
                                     CalculateScore(currentPlayer);
-                                    Fill();
+                                    
                                     // 次の手番のプレイヤーを呼び出す。
                                     currentPlayer.PlayerState = State.Waiting;
                                     if (isNextPlayer())
@@ -1612,9 +1845,10 @@ namespace RoppyakkenApplication
             }
             IEnumerable<Player> order = players.OrderByDescending(player => player.Score);
             int i = 1;
+            Console.Write("\n");
             foreach (Player player in order)
             {
-                Console.Write("{0}位（{1}さん）\n", i++, player.Name);
+                Console.Write("{0}位（{1}さん）{2}点\n", i++, player.Name, player.Score);
             }
         }
     }

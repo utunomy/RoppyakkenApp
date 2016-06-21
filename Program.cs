@@ -202,14 +202,6 @@ namespace RoppyakkenApplication
                     if (3 == matchCount)
                     {
                         bafuda.TakeToMatcbOnThreePiecesOfTheSameKinde(this, playerCard);
-
-                        foreach (Card matchedCard in bafuda.MatchedCards(playerCard))
-                        {
-                            bafuda.RemoveHand(matchedCard);
-                        }
-                        RemoveHand(playerCard);
-                        // フラグを落とす。
-                        bafuda.BafudaFlag &= ~BafudaFlags.ThreePiecesOfTheSameKind;
                     }
                     else if (1 < matchCount)
                     {
@@ -232,14 +224,6 @@ namespace RoppyakkenApplication
                     if (3 == matchCount)
                     {
                         bafuda.TakeToMatcbOnThreePiecesOfTheSameKinde(this, playerCard);
-
-                        foreach (Card matchedCard in bafuda.MatchedCards(playerCard))
-                        {
-                            bafuda.RemoveHand(matchedCard);
-                        }
-                        RemoveHand(playerCard);
-                        // フラグを落とす。
-                        bafuda.BafudaFlag &= ~BafudaFlags.ThreePiecesOfTheSameKind;
                     }
                     else if (1 < matchCount)
                     {
@@ -316,14 +300,6 @@ namespace RoppyakkenApplication
                     if (3 == matchCount)
                     {
                         bafuda.TakeToMatcbOnThreePiecesOfTheSameKinde(this, playerCard);
-
-                        foreach (Card matchedCard in bafuda.MatchedCards(playerCard))
-                        {
-                            bafuda.RemoveHand(matchedCard);
-                        }
-                        RemoveHand(playerCard);
-                        // フラグを落とす。
-                        bafuda.BafudaFlag &= ~BafudaFlags.ThreePiecesOfTheSameKind;
                     }
                     else if (1 < matchCount)
                     {
@@ -346,14 +322,6 @@ namespace RoppyakkenApplication
                     if (3 == matchCount)
                     {
                         bafuda.TakeToMatcbOnThreePiecesOfTheSameKinde(this, playerCard);
-
-                        foreach (Card matchedCard in bafuda.MatchedCards(playerCard))
-                        {
-                            bafuda.RemoveHand(matchedCard);
-                        }
-                        RemoveHand(playerCard);
-                        // フラグを落とす。
-                        bafuda.BafudaFlag &= ~BafudaFlags.ThreePiecesOfTheSameKind;
                     }
                     else if (1 < matchCount)
                     {
@@ -431,14 +399,6 @@ namespace RoppyakkenApplication
                     if (3 == matchCount)
                     {
                         bafuda.TakeToMatcbOnThreePiecesOfTheSameKinde(this, playerCard);
-
-                        foreach (Card matchedCard in bafuda.MatchedCards(playerCard))
-                        {
-                            bafuda.RemoveHand(matchedCard);
-                        }
-                        RemoveHand(playerCard);
-                        // フラグを落とす。
-                        bafuda.BafudaFlag &= ~BafudaFlags.ThreePiecesOfTheSameKind;
                     }
                     else if (1 < matchCount)
                     {
@@ -518,14 +478,6 @@ namespace RoppyakkenApplication
                     if (3 == matchCount)
                     {
                         bafuda.TakeToMatcbOnThreePiecesOfTheSameKinde(this, playerCard);
-
-                        foreach (Card matchedCard in bafuda.MatchedCards(playerCard))
-                        {
-                            bafuda.RemoveHand(matchedCard);
-                        }
-                        RemoveHand(playerCard);
-                        // フラグを落とす。
-                        bafuda.BafudaFlag &= ~BafudaFlags.ThreePiecesOfTheSameKind;
                     }
                     else if (1 < matchCount)
                     {
@@ -928,6 +880,8 @@ namespace RoppyakkenApplication
                 player.AddTokutenfuda(matchedCard);
                 RemoveHand(matchedCard);
             }
+            // フラグを落とす。
+            BafudaFlag &= ~BafudaFlags.ThreePiecesOfTheSameKind;
         }
         public void TakeToMatchOnYanagiAndKaeru(Player player, Card playerCard, int index)
         {

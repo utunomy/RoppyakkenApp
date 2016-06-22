@@ -242,9 +242,11 @@ namespace RoppyakkenApplication
                     }
                     else if (0 == matchCount)
                     {
-                        if (playerCard.CardPattern == Pattern.YanagiAndKaeru)
+                        List<Card> matchedCards = bafuda.MatchedCardsOnYanagiAndKaeru(playerCard);
+
+                        if (playerCard.CardPattern == Pattern.YanagiAndKaeru && matchedCards.Count > 0)
                         {
-                            bafuda.TakeToMatchOnYanagiAndKaeru(this, playerCard, bafuda.Hand.IndexOf(bafuda.MatchedCardsOnYanagiAndKaeru(playerCard)[0]));
+                            bafuda.TakeToMatchOnYanagiAndKaeru(this, playerCard, bafuda.Hand.IndexOf(matchedCards[0]));
                         }
                         else
                         {
@@ -305,15 +307,18 @@ namespace RoppyakkenApplication
                     }
                     else if (0 == matchCount)
                     {
-                        if (playerCard.CardPattern == Pattern.YanagiAndKaeru)
+                        List<Card> matchedCards = bafuda.MatchedCardsOnYanagiAndKaeru(playerCard);
+
+                        if (playerCard.CardPattern == Pattern.YanagiAndKaeru && matchedCards.Count > 0)
                         {
-                            bafuda.TakeToMatchOnYanagiAndKaeru(this, playerCard, bafuda.Hand.IndexOf(bafuda.MatchedCardsOnYanagiAndKaeru(playerCard)[0]));
+                            bafuda.TakeToMatchOnYanagiAndKaeru(this, playerCard, bafuda.Hand.IndexOf(matchedCards[0]));
                         }
                         else
                         {
                             bafuda.AddHand(playerCard);
                             RemoveHand(playerCard);
                         }
+                        
                     }
                 }
                 else if (!PlayerFlag.HasFlag(PlayerFlags.HandInYanagiAndKaeru))
@@ -418,7 +423,7 @@ namespace RoppyakkenApplication
             return matchedCards.First();
         }
         /// <summary>
-        /// 柳に蛙札で切る場合の選択。候補が存在する場合に呼び出し、切る札を選択する。
+        /// 柳に蛙札で切る場合の選択。候補が存在しない場合nullを返す。
         /// </summary>
         /// <param name="bafuda"></param>
         /// <param name="playerCard"></param>
@@ -450,7 +455,16 @@ namespace RoppyakkenApplication
             // 月が一致する札の内、点が高い札から切る。
             List<Card> matchedCards = bafuda.MatchedCardsOnYanagiAndKaeru(playerCard);
             matchedCards = matchedCards.OrderByDescending(card => card.Point).ToList();
-            return matchedCards.First();
+            if (0 < matchedCards.Count)
+            {
+                return matchedCards.First();
+            }
+            matchedCards = bafuda.MatchedCards(playerCard);
+            if (0 < matchedCards.Count)
+            {
+                return matchedCards.First();
+            }
+            return null;
         }
         /// <summary>
         /// 
@@ -492,9 +506,11 @@ namespace RoppyakkenApplication
                     }
                     else if (0 == matchCount)
                     {
-                        if (playerCard.CardPattern == Pattern.YanagiAndKaeru)
+                        Card choiceCard = ChoiceTakeAI1OnYanagiAndKaeru(bafuda, playerCard);
+
+                        if (playerCard.CardPattern == Pattern.YanagiAndKaeru && choiceCard != null)
                         {
-                            bafuda.TakeToMatchOnYanagiAndKaeru(this, playerCard, bafuda.Hand.IndexOf(ChoiceTakeAI1OnYanagiAndKaeru(bafuda, playerCard)));
+                            bafuda.TakeToMatchOnYanagiAndKaeru(this, playerCard, bafuda.Hand.IndexOf(choiceCard));
                         }
                         else
                         {
@@ -555,9 +571,11 @@ namespace RoppyakkenApplication
                     }
                     else if (0 == matchCount)
                     {
-                        if (playerCard.CardPattern == Pattern.YanagiAndKaeru)
+                        Card choiceCard = ChoiceTakeAI1OnYanagiAndKaeru(bafuda, playerCard);
+
+                        if (playerCard.CardPattern == Pattern.YanagiAndKaeru && choiceCard != null)
                         {
-                            bafuda.TakeToMatchOnYanagiAndKaeru(this, playerCard, bafuda.Hand.IndexOf(ChoiceTakeAI1OnYanagiAndKaeru(bafuda, playerCard)));
+                            bafuda.TakeToMatchOnYanagiAndKaeru(this, playerCard, bafuda.Hand.IndexOf(choiceCard));
                         }
                         else
                         {

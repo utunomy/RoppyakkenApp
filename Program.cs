@@ -358,7 +358,7 @@ namespace RoppyakkenApplication
             {
                 if (TokutenfudaPattern.HasFlag(kvp.Key))
                 {
-                    choiceDict.Remove(kvp.Key);
+                    choiceDict[kvp.Key] = 0;
                 }
             }
             Pattern choicePattern = choiceDict.Keys.First();
@@ -1438,7 +1438,7 @@ namespace RoppyakkenApplication
             {
                 bafuda.TakeToYamafuda(8);
                 bafuda.CheckFlags();
-                players.Add(new Player("太郎", yamafuda, Handle.AI1, count, this));
+                players.Add(new Player("太郎", yamafuda, Handle.Manual, count, this));
                 players.Add(new Player("和美", yamafuda, Handle.AI1, count, this));
                 players = players.OrderBy(i => Guid.NewGuid()).ToList();
                 players[0].PlayerState = State.Running;
@@ -1449,24 +1449,15 @@ namespace RoppyakkenApplication
             {
                 bafuda.TakeToYamafuda(6);
                 bafuda.CheckFlags();
-                players.Add(new Player("太郎", yamafuda, Handle.Auto, count, this));
-                players.Add(new Player("和美", yamafuda, Handle.Auto, count, this));
-                players.Add(new Player("紗子", yamafuda, Handle.Auto, count, this));
+                players.Add(new Player("太郎", yamafuda, Handle.AI1, count, this));
+                players.Add(new Player("和美", yamafuda, Handle.AI1, count, this));
+                players.Add(new Player("紗子", yamafuda, Handle.AI1, count, this));
                 players = players.OrderBy(i => Guid.NewGuid()).ToList();
                 players[0].PlayerState = State.Running;
                 players[1].PlayerState = State.Waiting;
                 players[2].PlayerState = State.Waiting;
                 Play();
             }
-        }
-        public Player GetNextPlayer(Player currentPlayer)
-        {
-            int index = players.IndexOf(currentPlayer);
-            if (index == players.Count - 1)
-            {
-                return players[0];
-            }
-            else return players[++index];
         }
         public bool isNextPlayer()
         {
@@ -1585,13 +1576,12 @@ namespace RoppyakkenApplication
         /// </summary>
         public void Play()
         {
-            Player currentPlayer = players.Single(player => player.PlayerState == State.Running);
-            
             while (isNextPlayer())
             {
+                Player currentPlayer = players.Single(player => player.PlayerState == State.Running);
+
                 if (currentPlayer.PlayerHandle == Handle.Auto)
                 {
-                    Fill();
                     // 手札から場札に一枚出す。
                     currentPlayer.ThrowToAuto(bafuda, currentPlayer.Hand[0]);
                     
@@ -1607,17 +1597,17 @@ namespace RoppyakkenApplication
                     currentPlayer.ThrowToAuto(bafuda, popCard);
                     CalculateScore(currentPlayer);
                     
-                    // 次の手番のプレイヤーを呼び出す。
+                    // 現在の手番のプレイヤーの状態を待機に設定する。
                     currentPlayer.PlayerState = State.Waiting;
                     if (isNextPlayer())
                     {
-                        currentPlayer = GetNextPlayer(currentPlayer);
-                        currentPlayer.PlayerState = State.Running;
+                        // 次のプレイヤーのステートをRunningに変更する。
+                        GetNextPlayer(currentPlayer).PlayerState = State.Running;
                     }
+                    continue;
                 }
                 else if (currentPlayer.PlayerHandle == Handle.AI1)
                 {
-                    Fill();
                     // 手札から場札に一枚出す。
                     currentPlayer.ThrowToAI1(bafuda, ChoiceThrowAI1(currentPlayer));
 
@@ -1637,315 +1627,305 @@ namespace RoppyakkenApplication
                     currentPlayer.PlayerState = State.Waiting;
                     if (isNextPlayer())
                     {
-                        currentPlayer = GetNextPlayer(currentPlayer);
-                        currentPlayer.PlayerState = State.Running;
+                        GetNextPlayer(currentPlayer).PlayerState = State.Running;
                     }
+                    continue;
                 }
                 else if (currentPlayer.PlayerHandle == Handle.Manual)
                 {
-                    while (true)
+                    Fill();
+                    Console.Write("どの札を出しますか？　出したい札のインデックスを入力して下さい。\n");
+                    ConsoleKey consoleKey = Console.ReadKey(true).Key;
+                    switch (consoleKey)
                     {
-                        Fill();
-                        Console.Write("どの札を出しますか？　出したい札のインデックスを入力して下さい。\n");
-                        ConsoleKey consoleKey = Console.ReadKey(true).Key;
-                        switch (consoleKey)
-                        {
-                            case ConsoleKey.D0:
-                                if (currentPlayer.Hand.Count < 1) break;
-                                Console.Write("{0} を出しますか？ Enter or N\n", currentPlayer.GetHandPattern(0));
-                                consoleKey = Console.ReadKey(true).Key;
-                                if (consoleKey == ConsoleKey.Enter)
+                        case ConsoleKey.D0:
+                            if (currentPlayer.Hand.Count < 1) break;
+                            Console.Write("{0} を出しますか？ Enter or N\n", currentPlayer.GetHandPattern(0));
+                            consoleKey = Console.ReadKey(true).Key;
+                            if (consoleKey == ConsoleKey.Enter)
+                            {
+                                currentPlayer.ThrowToManual(bafuda, currentPlayer.Hand[0]);
+                                // 山札から場札に一枚出す。
+                                Card popCard = yamafuda.CardPop();
+
+                                Console.Write("{0} を引きました。\n", popCard.CardPattern);
+
+                                // フラグチェック
+                                if (popCard.CardPattern == Pattern.YanagiAndKaeru)
                                 {
-                                    currentPlayer.ThrowToManual(bafuda, currentPlayer.Hand[0]);
-                                    // 山札から場札に一枚出す。
-                                    Card popCard = yamafuda.CardPop();
-
-                                    Console.Write("{0} を引きました。\n", popCard.CardPattern);
-
-                                    // フラグチェック
-                                    if (popCard.CardPattern == Pattern.YanagiAndKaeru)
-                                    {
-                                        currentPlayer.PlayerFlag |= PlayerFlags.HandInYanagiAndKaeru;
-                                    }
-                                    currentPlayer.AddHand(popCard);
-                                    currentPlayer.ThrowToManual(bafuda, popCard);
-                                    CalculateScore(currentPlayer);
-
-                                    // 次の手番のプレイヤーを呼び出す。
-                                    currentPlayer.PlayerState = State.Waiting;
-                                    if (isNextPlayer())
-                                    {
-                                        currentPlayer = GetNextPlayer(currentPlayer);
-                                        currentPlayer.PlayerState = State.Running;
-                                    }
-                                    break;
+                                    currentPlayer.PlayerFlag |= PlayerFlags.HandInYanagiAndKaeru;
                                 }
-                                else if (consoleKey == ConsoleKey.N)
+                                currentPlayer.AddHand(popCard);
+                                currentPlayer.ThrowToManual(bafuda, popCard);
+                                CalculateScore(currentPlayer);
+
+                                // 次の手番のプレイヤーを呼び出す。
+                                currentPlayer.PlayerState = State.Waiting;
+                                if (isNextPlayer())
                                 {
-                                    break;
+                                    GetNextPlayer(currentPlayer).PlayerState = State.Running;
                                 }
-                                else
-                                    break;
-                            case ConsoleKey.D1:
-                                if (currentPlayer.Hand.Count < 2) break;
-                                Console.Write("{0} を出しますか？ Enter or N\n", currentPlayer.GetHandPattern(1));
-                                consoleKey = Console.ReadKey(true).Key;
-                                if (consoleKey == ConsoleKey.Enter)
-                                {
-                                    Console.Write("{0} を出しました。\n", currentPlayer.GetHandPattern(1));
-                                    currentPlayer.ThrowToManual(bafuda, currentPlayer.Hand[1]);
-                                    // 山札から場札に一枚出す。
-                                    Card popCard = yamafuda.CardPop();
+                                break;
+                            }
+                            else if (consoleKey == ConsoleKey.N)
+                            {
+                                continue;
+                            }
+                            else
+                                continue;
+                        case ConsoleKey.D1:
+                            if (currentPlayer.Hand.Count < 2) break;
+                            Console.Write("{0} を出しますか？ Enter or N\n", currentPlayer.GetHandPattern(1));
+                            consoleKey = Console.ReadKey(true).Key;
+                            if (consoleKey == ConsoleKey.Enter)
+                            {
+                                Console.Write("{0} を出しました。\n", currentPlayer.GetHandPattern(1));
+                                currentPlayer.ThrowToManual(bafuda, currentPlayer.Hand[1]);
+                                // 山札から場札に一枚出す。
+                                Card popCard = yamafuda.CardPop();
 
-                                    Console.Write("{0} を引きました。\n", popCard.CardPattern);
+                                Console.Write("{0} を引きました。\n", popCard.CardPattern);
 
-                                    // フラグチェック
-                                    if (popCard.CardPattern == Pattern.YanagiAndKaeru)
-                                    {
-                                        currentPlayer.PlayerFlag |= PlayerFlags.HandInYanagiAndKaeru;
-                                    }
-                                    currentPlayer.AddHand(popCard);
-                                    currentPlayer.ThrowToManual(bafuda, popCard);
-                                    CalculateScore(currentPlayer);
-                                   
-                                    // 次の手番のプレイヤーを呼び出す。
-                                    currentPlayer.PlayerState = State.Waiting;
-                                    if (isNextPlayer())
-                                    {
-                                        currentPlayer = GetNextPlayer(currentPlayer);
-                                        currentPlayer.PlayerState = State.Running;
-                                    }
-                                    break;
-                                }
-                                else if (consoleKey == ConsoleKey.N)
+                                // フラグチェック
+                                if (popCard.CardPattern == Pattern.YanagiAndKaeru)
                                 {
-                                    break;
+                                    currentPlayer.PlayerFlag |= PlayerFlags.HandInYanagiAndKaeru;
                                 }
-                                else
-                                    break;
-                            case ConsoleKey.D2:
-                                if (currentPlayer.Hand.Count < 3) break;
-                                Console.Write("{0} を出しますか？ Enter or N\n", currentPlayer.GetHandPattern(2));
-                                consoleKey = Console.ReadKey(true).Key;
-                                if (consoleKey == ConsoleKey.Enter)
-                                {
-                                    Console.Write("{0} を出しました。\n", currentPlayer.GetHandPattern(2));
-                                    currentPlayer.ThrowToManual(bafuda, currentPlayer.Hand[2]);
-                                    // 山札から場札に一枚出す。
-                                    Card popCard = yamafuda.CardPop();
+                                currentPlayer.AddHand(popCard);
+                                currentPlayer.ThrowToManual(bafuda, popCard);
+                                CalculateScore(currentPlayer);
 
-                                    Console.Write("{0} を引きました。\n", popCard.CardPattern);
-
-                                    // フラグチェック
-                                    if (popCard.CardPattern == Pattern.YanagiAndKaeru)
-                                    {
-                                        currentPlayer.PlayerFlag |= PlayerFlags.HandInYanagiAndKaeru;
-                                    }
-                                    currentPlayer.AddHand(popCard);
-                                    currentPlayer.ThrowToManual(bafuda, popCard);
-                                    CalculateScore(currentPlayer);
-                                    
-                                    // 次の手番のプレイヤーを呼び出す。
-                                    currentPlayer.PlayerState = State.Waiting;
-                                    if (isNextPlayer())
-                                    {
-                                        currentPlayer = GetNextPlayer(currentPlayer);
-                                        currentPlayer.PlayerState = State.Running;
-                                    }
-                                    break;
-                                }
-                                else if (consoleKey == ConsoleKey.N)
+                                // 次の手番のプレイヤーを呼び出す。
+                                currentPlayer.PlayerState = State.Waiting;
+                                if (isNextPlayer())
                                 {
-                                    break;
+                                    GetNextPlayer(currentPlayer).PlayerState = State.Running;
                                 }
-                                else
-                                    break;
-                            case ConsoleKey.D3:
-                                if (currentPlayer.Hand.Count < 4) break;
-                                Console.Write("{0} を出しますか？ Enter or N\n", currentPlayer.GetHandPattern(3));
-                                consoleKey = Console.ReadKey(true).Key;
-                                if (consoleKey == ConsoleKey.Enter)
-                                {
-                                    Console.Write("{0} を出しました。\n", currentPlayer.GetHandPattern(3));
-                                    currentPlayer.ThrowToManual(bafuda, currentPlayer.Hand[3]);
-                                    // 山札から場札に一枚出す。
-                                    Card popCard = yamafuda.CardPop();
+                                break;
+                            }
+                            else if (consoleKey == ConsoleKey.N)
+                            {
+                                continue;
+                            }
+                            else
+                                continue;
+                        case ConsoleKey.D2:
+                            if (currentPlayer.Hand.Count < 3) break;
+                            Console.Write("{0} を出しますか？ Enter or N\n", currentPlayer.GetHandPattern(2));
+                            consoleKey = Console.ReadKey(true).Key;
+                            if (consoleKey == ConsoleKey.Enter)
+                            {
+                                Console.Write("{0} を出しました。\n", currentPlayer.GetHandPattern(2));
+                                currentPlayer.ThrowToManual(bafuda, currentPlayer.Hand[2]);
+                                // 山札から場札に一枚出す。
+                                Card popCard = yamafuda.CardPop();
 
-                                    Console.Write("{0} を引きました。\n", popCard.CardPattern);
+                                Console.Write("{0} を引きました。\n", popCard.CardPattern);
 
-                                    // フラグチェック
-                                    if (popCard.CardPattern == Pattern.YanagiAndKaeru)
-                                    {
-                                        currentPlayer.PlayerFlag |= PlayerFlags.HandInYanagiAndKaeru;
-                                    }
-                                    currentPlayer.AddHand(popCard);
-                                    currentPlayer.ThrowToManual(bafuda, popCard);
-                                    CalculateScore(currentPlayer);
-                                    
-                                    // 次の手番のプレイヤーを呼び出す。
-                                    currentPlayer.PlayerState = State.Waiting;
-                                    if (isNextPlayer())
-                                    {
-                                        currentPlayer = GetNextPlayer(currentPlayer);
-                                        currentPlayer.PlayerState = State.Running;
-                                    }
-                                    break;
-                                }
-                                else if (consoleKey == ConsoleKey.N)
+                                // フラグチェック
+                                if (popCard.CardPattern == Pattern.YanagiAndKaeru)
                                 {
-                                    break;
+                                    currentPlayer.PlayerFlag |= PlayerFlags.HandInYanagiAndKaeru;
                                 }
-                                else
-                                    break;
-                            case ConsoleKey.D4:
-                                if (currentPlayer.Hand.Count < 5) break;
-                                Console.Write("{0} を出しますか？ Enter or N\n", currentPlayer.GetHandPattern(4));
-                                consoleKey = Console.ReadKey(true).Key;
-                                if (consoleKey == ConsoleKey.Enter)
-                                {
-                                    Console.Write("{0} を出しました。\n", currentPlayer.GetHandPattern(4));
-                                    currentPlayer.ThrowToManual(bafuda, currentPlayer.Hand[4]);
-                                    // 山札から場札に一枚出す。
-                                    Card popCard = yamafuda.CardPop();
+                                currentPlayer.AddHand(popCard);
+                                currentPlayer.ThrowToManual(bafuda, popCard);
+                                CalculateScore(currentPlayer);
 
-                                    Console.Write("{0} を引きました。\n", popCard.CardPattern);
-
-                                    // フラグチェック
-                                    if (popCard.CardPattern == Pattern.YanagiAndKaeru)
-                                    {
-                                        currentPlayer.PlayerFlag |= PlayerFlags.HandInYanagiAndKaeru;
-                                    }
-                                    currentPlayer.AddHand(popCard);
-                                    currentPlayer.ThrowToManual(bafuda, popCard);
-                                    CalculateScore(currentPlayer);
-                                    
-                                    // 次の手番のプレイヤーを呼び出す。
-                                    currentPlayer.PlayerState = State.Waiting;
-                                    if (isNextPlayer())
-                                    {
-                                        currentPlayer = GetNextPlayer(currentPlayer);
-                                        currentPlayer.PlayerState = State.Running;
-                                    }
-                                    break;
-                                }
-                                else if (consoleKey == ConsoleKey.N)
+                                // 次の手番のプレイヤーを呼び出す。
+                                currentPlayer.PlayerState = State.Waiting;
+                                if (isNextPlayer())
                                 {
-                                    break;
-                                }
-                                else
-                                    break;
-                            case ConsoleKey.D5:
-                                if (currentPlayer.Hand.Count < 6) break;
-                                Console.Write("{0} を出しますか？ Enter or N\n", currentPlayer.GetHandPattern(5));
-                                consoleKey = Console.ReadKey(true).Key;
-                                if (consoleKey == ConsoleKey.Enter)
-                                {
-                                    Console.Write("{0} を出しました。\n", currentPlayer.GetHandPattern(5));
-                                    currentPlayer.ThrowToManual(bafuda, currentPlayer.Hand[5]);
-                                    // 山札から場札に一枚出す。
-                                    Card popCard = yamafuda.CardPop();
 
-                                    Console.Write("{0} を引きました。\n", popCard.CardPattern);
+                                    GetNextPlayer(currentPlayer).PlayerState = State.Running;
+                                }
+                                break;
+                            }
+                            else if (consoleKey == ConsoleKey.N)
+                            {
+                                continue;
+                            }
+                            else
+                                continue;
+                        case ConsoleKey.D3:
+                            if (currentPlayer.Hand.Count < 4) break;
+                            Console.Write("{0} を出しますか？ Enter or N\n", currentPlayer.GetHandPattern(3));
+                            consoleKey = Console.ReadKey(true).Key;
+                            if (consoleKey == ConsoleKey.Enter)
+                            {
+                                Console.Write("{0} を出しました。\n", currentPlayer.GetHandPattern(3));
+                                currentPlayer.ThrowToManual(bafuda, currentPlayer.Hand[3]);
+                                // 山札から場札に一枚出す。
+                                Card popCard = yamafuda.CardPop();
 
-                                    // フラグチェック
-                                    if (popCard.CardPattern == Pattern.YanagiAndKaeru)
-                                    {
-                                        currentPlayer.PlayerFlag |= PlayerFlags.HandInYanagiAndKaeru;
-                                    }
-                                    currentPlayer.AddHand(popCard);
-                                    currentPlayer.ThrowToManual(bafuda, popCard);
-                                    CalculateScore(currentPlayer);
-                                    
-                                    // 次の手番のプレイヤーを呼び出す。
-                                    currentPlayer.PlayerState = State.Waiting;
-                                    if (isNextPlayer())
-                                    {
-                                        currentPlayer = GetNextPlayer(currentPlayer);
-                                        currentPlayer.PlayerState = State.Running;
-                                    }
-                                    break;
-                                }
-                                else if (consoleKey == ConsoleKey.N)
-                                {
-                                    break;
-                                }
-                                else
-                                    break;
-                            case ConsoleKey.D6:
-                                if (currentPlayer.Hand.Count < 7) break;
-                                Console.Write("{0} を出しますか？ Enter or N\n", currentPlayer.GetHandPattern(6));
-                                consoleKey = Console.ReadKey(true).Key;
-                                if (consoleKey == ConsoleKey.Enter)
-                                {
-                                    Console.Write("{0} を出しました。\n", currentPlayer.GetHandPattern(6));
-                                    currentPlayer.ThrowToManual(bafuda, currentPlayer.Hand[6]);
-                                    // 山札から場札に一枚出す。
-                                    Card popCard = yamafuda.CardPop();
+                                Console.Write("{0} を引きました。\n", popCard.CardPattern);
 
-                                    Console.Write("{0} を引きました。\n", popCard.CardPattern);
-
-                                    // フラグチェック
-                                    if (popCard.CardPattern == Pattern.YanagiAndKaeru)
-                                    {
-                                        currentPlayer.PlayerFlag |= PlayerFlags.HandInYanagiAndKaeru;
-                                    }
-                                    currentPlayer.AddHand(popCard);
-                                    currentPlayer.ThrowToManual(bafuda, popCard);
-                                    CalculateScore(currentPlayer);
-                                    
-                                    // 次の手番のプレイヤーを呼び出す。
-                                    currentPlayer.PlayerState = State.Waiting;
-                                    if (isNextPlayer())
-                                    {
-                                        currentPlayer = GetNextPlayer(currentPlayer);
-                                        currentPlayer.PlayerState = State.Running;
-                                    }
-                                    break;
-                                }
-                                else if (consoleKey == ConsoleKey.N)
+                                // フラグチェック
+                                if (popCard.CardPattern == Pattern.YanagiAndKaeru)
                                 {
-                                    break;
+                                    currentPlayer.PlayerFlag |= PlayerFlags.HandInYanagiAndKaeru;
                                 }
-                                else
-                                    break;
-                            case ConsoleKey.D7:
-                                if (currentPlayer.Hand.Count < 8) break;
-                                Console.Write("{0} を出しますか？ Enter or N\n", currentPlayer.GetHandPattern(7));
-                                consoleKey = Console.ReadKey(true).Key;
-                                if (consoleKey == ConsoleKey.Enter)
-                                {
-                                    Console.Write("{0} を出しました。\n", currentPlayer.GetHandPattern(7));
-                                    currentPlayer.ThrowToManual(bafuda, currentPlayer.Hand[7]);
-                                    // 山札から場札に一枚出す。
-                                    Card popCard = yamafuda.CardPop();
+                                currentPlayer.AddHand(popCard);
+                                currentPlayer.ThrowToManual(bafuda, popCard);
+                                CalculateScore(currentPlayer);
 
-                                    Console.Write("{0} を引きました。\n", popCard.CardPattern);
-
-                                    // フラグチェック
-                                    if (popCard.CardPattern == Pattern.YanagiAndKaeru)
-                                    {
-                                        currentPlayer.PlayerFlag |= PlayerFlags.HandInYanagiAndKaeru;
-                                    }
-                                    currentPlayer.AddHand(popCard);
-                                    currentPlayer.ThrowToManual(bafuda, popCard);
-                                    CalculateScore(currentPlayer);
-                                    
-                                    // 次の手番のプレイヤーを呼び出す。
-                                    currentPlayer.PlayerState = State.Waiting;
-                                    if (isNextPlayer())
-                                    {
-                                        currentPlayer = GetNextPlayer(currentPlayer);
-                                        currentPlayer.PlayerState = State.Running;
-                                    }
-                                    break;
-                                }
-                                else if (consoleKey == ConsoleKey.N)
+                                // 次の手番のプレイヤーを呼び出す。
+                                currentPlayer.PlayerState = State.Waiting;
+                                if (isNextPlayer())
                                 {
-                                    break;
+                                    GetNextPlayer(currentPlayer).PlayerState = State.Running;
                                 }
-                                else
-                                    break;
-                        }
+                                break;
+                            }
+                            else if (consoleKey == ConsoleKey.N)
+                            {
+                                continue;
+                            }
+                            else
+                                continue;
+                        case ConsoleKey.D4:
+                            if (currentPlayer.Hand.Count < 5) break;
+                            Console.Write("{0} を出しますか？ Enter or N\n", currentPlayer.GetHandPattern(4));
+                            consoleKey = Console.ReadKey(true).Key;
+                            if (consoleKey == ConsoleKey.Enter)
+                            {
+                                Console.Write("{0} を出しました。\n", currentPlayer.GetHandPattern(4));
+                                currentPlayer.ThrowToManual(bafuda, currentPlayer.Hand[4]);
+                                // 山札から場札に一枚出す。
+                                Card popCard = yamafuda.CardPop();
+
+                                Console.Write("{0} を引きました。\n", popCard.CardPattern);
+
+                                // フラグチェック
+                                if (popCard.CardPattern == Pattern.YanagiAndKaeru)
+                                {
+                                    currentPlayer.PlayerFlag |= PlayerFlags.HandInYanagiAndKaeru;
+                                }
+                                currentPlayer.AddHand(popCard);
+                                currentPlayer.ThrowToManual(bafuda, popCard);
+                                CalculateScore(currentPlayer);
+
+                                // 次の手番のプレイヤーを呼び出す。
+                                currentPlayer.PlayerState = State.Waiting;
+                                if (isNextPlayer())
+                                {
+                                    GetNextPlayer(currentPlayer).PlayerState = State.Running;
+                                }
+                                break;
+                            }
+                            else if (consoleKey == ConsoleKey.N)
+                            {
+                                continue;
+                            }
+                            else
+                                continue;
+                        case ConsoleKey.D5:
+                            if (currentPlayer.Hand.Count < 6) break;
+                            Console.Write("{0} を出しますか？ Enter or N\n", currentPlayer.GetHandPattern(5));
+                            consoleKey = Console.ReadKey(true).Key;
+                            if (consoleKey == ConsoleKey.Enter)
+                            {
+                                Console.Write("{0} を出しました。\n", currentPlayer.GetHandPattern(5));
+                                currentPlayer.ThrowToManual(bafuda, currentPlayer.Hand[5]);
+                                // 山札から場札に一枚出す。
+                                Card popCard = yamafuda.CardPop();
+
+                                Console.Write("{0} を引きました。\n", popCard.CardPattern);
+
+                                // フラグチェック
+                                if (popCard.CardPattern == Pattern.YanagiAndKaeru)
+                                {
+                                    currentPlayer.PlayerFlag |= PlayerFlags.HandInYanagiAndKaeru;
+                                }
+                                currentPlayer.AddHand(popCard);
+                                currentPlayer.ThrowToManual(bafuda, popCard);
+                                CalculateScore(currentPlayer);
+
+                                // 次の手番のプレイヤーを呼び出す。
+                                currentPlayer.PlayerState = State.Waiting;
+                                if (isNextPlayer())
+                                {
+                                    GetNextPlayer(currentPlayer).PlayerState = State.Running;
+                                }
+                                break;
+                            }
+                            else if (consoleKey == ConsoleKey.N)
+                            {
+                                continue;
+                            }
+                            else
+                                continue;
+                        case ConsoleKey.D6:
+                            if (currentPlayer.Hand.Count < 7) break;
+                            Console.Write("{0} を出しますか？ Enter or N\n", currentPlayer.GetHandPattern(6));
+                            consoleKey = Console.ReadKey(true).Key;
+                            if (consoleKey == ConsoleKey.Enter)
+                            {
+                                Console.Write("{0} を出しました。\n", currentPlayer.GetHandPattern(6));
+                                currentPlayer.ThrowToManual(bafuda, currentPlayer.Hand[6]);
+                                // 山札から場札に一枚出す。
+                                Card popCard = yamafuda.CardPop();
+
+                                Console.Write("{0} を引きました。\n", popCard.CardPattern);
+
+                                // フラグチェック
+                                if (popCard.CardPattern == Pattern.YanagiAndKaeru)
+                                {
+                                    currentPlayer.PlayerFlag |= PlayerFlags.HandInYanagiAndKaeru;
+                                }
+                                currentPlayer.AddHand(popCard);
+                                currentPlayer.ThrowToManual(bafuda, popCard);
+                                CalculateScore(currentPlayer);
+
+                                // 次の手番のプレイヤーを呼び出す。
+                                currentPlayer.PlayerState = State.Waiting;
+                                if (isNextPlayer())
+                                {
+                                    GetNextPlayer(currentPlayer).PlayerState = State.Running;
+                                }
+                                break;
+                            }
+                            else if (consoleKey == ConsoleKey.N)
+                            {
+                                continue;
+                            }
+                            else
+                                continue;
+                        case ConsoleKey.D7:
+                            if (currentPlayer.Hand.Count < 8) break;
+                            Console.Write("{0} を出しますか？ Enter or N\n", currentPlayer.GetHandPattern(7));
+                            consoleKey = Console.ReadKey(true).Key;
+                            if (consoleKey == ConsoleKey.Enter)
+                            {
+                                Console.Write("{0} を出しました。\n", currentPlayer.GetHandPattern(7));
+                                currentPlayer.ThrowToManual(bafuda, currentPlayer.Hand[7]);
+                                // 山札から場札に一枚出す。
+                                Card popCard = yamafuda.CardPop();
+
+                                Console.Write("{0} を引きました。\n", popCard.CardPattern);
+
+                                // フラグチェック
+                                if (popCard.CardPattern == Pattern.YanagiAndKaeru)
+                                {
+                                    currentPlayer.PlayerFlag |= PlayerFlags.HandInYanagiAndKaeru;
+                                }
+                                currentPlayer.AddHand(popCard);
+                                currentPlayer.ThrowToManual(bafuda, popCard);
+                                CalculateScore(currentPlayer);
+
+                                // 次の手番のプレイヤーを呼び出す。
+                                currentPlayer.PlayerState = State.Waiting;
+                                if (isNextPlayer())
+                                {
+                                    GetNextPlayer(currentPlayer).PlayerState = State.Running;
+                                }
+                                break;
+                            }
+                            else if (consoleKey == ConsoleKey.N)
+                            {
+                                continue;
+                            }
+                            else
+                                continue;
                     }
                 }
             }
@@ -1955,6 +1935,18 @@ namespace RoppyakkenApplication
             foreach (Player player in order)
             {
                 Console.Write("{0}位（{1}さん）{2}点\n", i++, player.Name, player.Score);
+            }
+        }
+        public Player GetNextPlayer(Player currenPlayer)
+        {
+            int currentIndex = players.IndexOf(currenPlayer);
+            if (currentIndex == players.Count - 1)
+            {
+                return players[0];
+            }
+            else
+            {
+                return players[++currentIndex];
             }
         }
     }

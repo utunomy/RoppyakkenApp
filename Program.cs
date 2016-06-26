@@ -219,13 +219,12 @@ namespace RoppyakkenApplication
                     int matchCount = bafuda.MatchManthCount(playerCard);
                     if (3 == matchCount)
                     {
-                        bafuda.TakeToMatchOnThreePiecesOfTheSameKind(this, playerCard);
-
                         if (playerCard.CardPattern == Pattern.YanagiAndKaeru)
                         {
                             // フラグを落とす。
                             PlayerFlag &= ~PlayerFlags.HandInYanagiAndKaeru;
                         }
+                        bafuda.TakeToMatchOnThreePiecesOfTheSameKind(this, playerCard);
                     }
                     else if (1 < matchCount)
                     {
@@ -269,8 +268,6 @@ namespace RoppyakkenApplication
                     int matchCount = bafuda.MatchManthCount(playerCard);
                     if (3 == matchCount)
                     {
-                        bafuda.TakeToMatchOnThreePiecesOfTheSameKind(this, playerCard);
-
                         List<Card> matchedCards = bafuda.MatchedCards(playerCard);
 
                         if (matchedCards.Any(card => card.CardPattern == Pattern.YanagiAndKaeru))
@@ -278,6 +275,7 @@ namespace RoppyakkenApplication
                             // フラグを落とす。
                             bafuda.BafudaFlag &= ~BafudaFlags.HandInYanagiAndKaeru;
                         }
+                        bafuda.TakeToMatchOnThreePiecesOfTheSameKind(this, playerCard);
                     }
                     else if (1 < matchCount)
                     {
@@ -538,22 +536,22 @@ namespace RoppyakkenApplication
 
             // 役に必要な札の集合
             Pattern requiredCards = choicePattern & ~TokutenfudaPattern;
-            foreach (Card card in bafuda.MatchedCardsOnYanagiAndKaeru2(playerCard))
+            List<Card> matchedCards = bafuda.MatchedCardsOnYanagiAndKaeru2(playerCard);
+            foreach (Card card in matchedCards)
             {
                 if (requiredCards.HasFlag(card.CardPattern))
                 {
                     return card;
                 }
             }
-            // 月が一致する札の内、点が高い札から切る。
-            List<Card> matchedCards = bafuda.MatchedCardsOnYanagiAndKaeru2(playerCard);
+            // 月が一致する札と柳に蛙札の内、点が高い札から切る。
             matchedCards = matchedCards.OrderByDescending(card => card.Point).ToList();
-            if (0 < matchedCards.Count)
+            if (0 != matchedCards.Count)
             {
                 return matchedCards.First();
             }
             matchedCards = bafuda.MatchedCards(playerCard);
-            if (0 < matchedCards.Count)
+            if (0 != matchedCards.Count)
             {
                 return matchedCards.First();
             }
@@ -573,13 +571,12 @@ namespace RoppyakkenApplication
                     int matchCount = bafuda.MatchManthCount(playerCard);
                     if (3 == matchCount)
                     {
-                        bafuda.TakeToMatchOnThreePiecesOfTheSameKind(this, playerCard);
-                        
                         if (playerCard.CardPattern == Pattern.YanagiAndKaeru)
                         {
                             // フラグを落とす。
                             PlayerFlag &= ~PlayerFlags.HandInYanagiAndKaeru;
                         }
+                        bafuda.TakeToMatchOnThreePiecesOfTheSameKind(this, playerCard);
                     }
                     else if (1 < matchCount)
                     {
@@ -623,8 +620,6 @@ namespace RoppyakkenApplication
                     int matchCount = bafuda.MatchManthCount(playerCard);
                     if (3 == matchCount)
                     {
-                        bafuda.TakeToMatchOnThreePiecesOfTheSameKind(this, playerCard);
-
                         List<Card> matchedCards = bafuda.MatchedCards(playerCard);
 
                         if (matchedCards.Any(card => card.CardPattern == Pattern.YanagiAndKaeru))
@@ -632,6 +627,8 @@ namespace RoppyakkenApplication
                             // フラグを落とす。
                             bafuda.BafudaFlag &= ~BafudaFlags.HandInYanagiAndKaeru;
                         }
+                        bafuda.TakeToMatchOnThreePiecesOfTheSameKind(this, playerCard);
+                        
                     }
                     else if (1 < matchCount)
                     {
@@ -732,6 +729,7 @@ namespace RoppyakkenApplication
                     else if (1 == matchCount)
                     {
                         bafuda.TakeToMatchOnYanagiAndKaeru2(this, playerCard, bafuda.Hand.IndexOf(ChoiceTakeAI1OnYanagiAndKaeru2(bafuda, playerCard)));
+                        
                     }
                     else if (0 == matchCount)
                     {
@@ -791,13 +789,12 @@ namespace RoppyakkenApplication
                             Console.Write("{0}, ", card.CardPattern);
                         }
                         Console.Write("を切りました。\n");
-                        bafuda.TakeToMatchOnThreePiecesOfTheSameKind(this, playerCard);
-
                         if (playerCard.CardPattern == Pattern.YanagiAndKaeru)
                         {
                             // フラグを落とす。
                             PlayerFlag &= ~PlayerFlags.HandInYanagiAndKaeru;
                         }
+                        bafuda.TakeToMatchOnThreePiecesOfTheSameKind(this, playerCard);
                     }
                     else if (1 < matchCount)
                     {
@@ -948,13 +945,12 @@ namespace RoppyakkenApplication
                             Console.Write("{0}, ", card.CardPattern);
                         }
                         Console.Write("を切りました。\n");
-                        bafuda.TakeToMatchOnThreePiecesOfTheSameKind(this, playerCard);
-
                         if (matchedCards.Any(card => card.CardPattern == Pattern.YanagiAndKaeru))
                         {
                             // フラグを落とす。
                             bafuda.BafudaFlag &= ~BafudaFlags.HandInYanagiAndKaeru;
                         }
+                        bafuda.TakeToMatchOnThreePiecesOfTheSameKind(this, playerCard);
                     }
                     else if (1 < matchCount)
                     {
@@ -1810,7 +1806,7 @@ namespace RoppyakkenApplication
             if (hand.Count < 1) throw new Exception();
 
             List<Card> matchedCards = new List<Card>();
-            if (playerCard.Point > 0)
+            if (playerCard.Point != 0)
             {
                 IEnumerable<Card> whereYanagiAndKaeru = hand.Where(card => card.CardPattern == Pattern.YanagiAndKaeru);
                 if (whereYanagiAndKaeru.Count() == 0) throw new Exception();
@@ -1819,6 +1815,12 @@ namespace RoppyakkenApplication
             matchedCards.Union(hand.Where(card => card.Manth == playerCard.Manth));
             return matchedCards;
         }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="player"></param>
+        /// <param name="playerCard"></param>
+        /// <param name="index"></param>
         public void TakeToMatchOnYanagiAndKaeru2(Player player, Card playerCard, int index)
         {
             // require
@@ -1837,7 +1839,7 @@ namespace RoppyakkenApplication
                 player.RemoveHand(playerCard);
 
                 // フラグを落とす。
-                BafudaFlag &= ~BafudaFlags.HandInYanagiAndKaeru;
+                 BafudaFlag &= ~BafudaFlags.HandInYanagiAndKaeru;
             }
             else if (isMatchManth(playerCard, hand[index]))
             {
@@ -1909,7 +1911,7 @@ namespace RoppyakkenApplication
             {
                 bafuda.TakeToYamafuda(8);
                 bafuda.CheckFlags();
-                players.Add(new Player("太郎", yamafuda, Handle.Manual, count, this));
+                players.Add(new Player("太郎", yamafuda, Handle.AI1, count, this));
                 players.Add(new Player("和美", yamafuda, Handle.AI1, count, this));
                 players = players.OrderBy(i => Guid.NewGuid()).ToList();
                 players[0].PlayerState = State.Running;
@@ -1938,7 +1940,7 @@ namespace RoppyakkenApplication
             {
                 bafuda.TakeToYamafuda(8);
                 bafuda.CheckFlags();
-                players.Add(new Player("太郎", yamafuda, Handle.Manual, count, this));
+                players.Add(new Player("太郎", yamafuda, Handle.AI1, count, this));
                 players.Add(new Player("和美", yamafuda, Handle.AI1, count, this));
                 players[0].PlayerState = State.Running;
                 players[1].PlayerState = State.Waiting;
@@ -2068,6 +2070,7 @@ namespace RoppyakkenApplication
 
                 if (currentPlayer.PlayerHandle == Handle.Auto)
                 {
+                    Fill();
                     // 手札から場札に一枚出す。
                     currentPlayer.ThrowToAuto(bafuda, currentPlayer.Hand[0]);
                     
@@ -2094,6 +2097,7 @@ namespace RoppyakkenApplication
                 }
                 else if (currentPlayer.PlayerHandle == Handle.AI1)
                 {
+                    Fill();
                     // 手札から場札に一枚出す。
                     currentPlayer.ThrowToAI1(bafuda, ChoiceThrowAI1(currentPlayer));
 
